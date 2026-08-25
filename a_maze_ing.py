@@ -343,14 +343,16 @@ class MazeGenerator:
         return None
 
     def print(
-        self, theme: int
+        self, theme: int, entry: tuple[int, int], exit_point: tuple[int, int]
     ) -> Optional[str]:
         if theme == 0:
             # Color pallete (aa=basic, aa1=light, aa2=dark, aaF=foreground)
             c = {
-                "gr": "\x1b[48;2;0;195;0m",  # basic green background
-                "gr2F": "\x1b[38;2;0;120;0m",  # dark green background
-                "yl": "\x1b[48;2;255;195;50m",  # basic yellow background
+                "gr": "\x1b[48;2;0;195;0m",  # basic green
+                "gr2F": "\x1b[38;2;0;120;0m",  # dark green foreground
+                "yl": "\x1b[48;2;255;195;50m",  # basic yellow
+                "rd": "\x1b[48;2;180;0;0m",  # red
+                "pr": "\x1b[48;2;180;0;255m",  # purple
                 "0": "\x1b[0m"  # reset
             }
 
@@ -358,6 +360,8 @@ class MazeGenerator:
                 soil = c["yl"] + "  "
                 soil_shaded = c["yl"] + c["gr2F"] + "▀▀"
                 hedge = c["gr"] + "  "
+                entry_point = c["rd"] + "  "
+                exit_point = c["pr"] + "  "
             p = Pallete()
             output = ""
             for row_number, row in enumerate(self.grid):
@@ -390,7 +394,11 @@ class MazeGenerator:
                     if str(cell) == "f":
                         row_bottom += p.hedge
                     else:
-                        if cell.north:
+                        if (cell_number, row_number) == entry:
+                            row_bottom += p.entry_point
+                        elif (cell_number, row_number) == exit_point:
+                            row_bottom += p.exit_point
+                        elif cell.north:
                             row_bottom += p.soil_shaded
                         else:
                             row_bottom += p.soil
@@ -416,7 +424,7 @@ def main(arguments: list[str]) -> int:
         config.get_width(), config.get_height(), config.get_seed()
     )
     generator.generate(config.get_algorithm())
-    generator.print(0)
+    generator.print(0, config.get_entry(), config.get_exit())
     error = generator.save_output(
         config.get_output_file(), config.get_entry(), config.get_exit()
     )
