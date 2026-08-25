@@ -162,11 +162,14 @@ class ConfigLoader:
 
         for name, point in (("ENTRY", entry), ("EXIT", exit_point)):
             if point[0] >= width or point[1] >= height:
-                errors.append(f"{name} {point} is outside maze boundaries "f"({width}x{height})")
-        if entry == exit_point:
                 errors.append(
-                    f"ENTRY {entry} cannot be the same as EXIT {exit_point}"
+                    f"{name} {point} is outside maze boundaries "
+                    + f"({width}x{height})"
                 )
+        if entry == exit_point:
+            errors.append(
+                f"ENTRY {entry} cannot be the same as EXIT {exit_point}"
+            )
         if errors:
             return None, "\n".join(errors)
         return MazeConfig(
@@ -205,9 +208,9 @@ class MazeGenerator:
         x, y = current
         neighbors: list[tuple[int, int]] = []
         candidates = ((x, y + 1), (x, y - 1), (x + 1, y), (x - 1, y))
-        for candidate in candidates:
-            if (0 <= candidate[0] < self.width and 0 <= candidate[1] < self.height):
-                neighbors.append(candidate)
+        for cand in candidates:
+            if (0 <= cand[0] < self.width and 0 <= cand[1] < self.height):
+                neighbors.append(cand)
         return neighbors
 
     def open_passage(
@@ -240,16 +243,23 @@ class MazeGenerator:
                 self.generate_dfs(next_cell)
 
     def generate_walk(self) -> None:
-        start = (random.randrange(self.width),random.randrange(self.height))
+        start = (random.randrange(self.width), random.randrange(self.height))
         self.grid[start[1]][start[0]].visited = True
         visited = [start]
-        not_visited = [(x, y) for x in range(self.width) for y in range(self.height) if (x,y) != start]
+        not_visited = [
+            (x, y) for x in range(self.width)
+            for y in range(self.height)
+            if (x, y) != start
+        ]
         while not_visited:
             start = random.choice(visited)
-            end=random.choice(not_visited)
+            end = random.choice(not_visited)
             while start != end:
                 neighbors = self.get_neighbors(start)
-                neighbors_not = [(nx, ny) for (nx, ny) in neighbors if not self.grid[ny][nx].visited]
+                neighbors_not = [
+                    (nx, ny) for (nx, ny) in neighbors
+                    if not self.grid[ny][nx].visited
+                ]
                 if neighbors_not:
                     next_visit = random.choice(neighbors_not)
                     nx, ny = next_visit
@@ -257,7 +267,7 @@ class MazeGenerator:
                     self.open_passage(start, next_visit)
                     visited.append(next_visit)
                     not_visited.remove(next_visit)
-                    start=next_visit
+                    start = next_visit
                     break
                 else:
                     if neighbors:
@@ -269,7 +279,10 @@ class MazeGenerator:
         else:
             self.generate_dfs()
 
-    def find_path(self, current: tuple[int, int], exit_point: tuple[int, int], path: str = "", visited: Optional[set[tuple[int, int]]] = None) -> Optional[str]:
+    def find_path(
+        self, current: tuple[int, int], exit_point: tuple[int, int],
+        path: str = "", visited: Optional[set[tuple[int, int]]] = None
+    ) -> Optional[str]:
         if visited is None:
             visited = set()
         if current == exit_point:
@@ -296,7 +309,10 @@ class MazeGenerator:
         visited.remove(current)
         return None
 
-    def save_output(self,output_file: str,entry: tuple[int, int],exit_point: tuple[int, int]) -> Optional[str]:
+    def save_output(
+        self, output_file: str, entry: tuple[int, int],
+        exit_point: tuple[int, int]
+    ) -> Optional[str]:
         path = self.find_path(entry, exit_point)
         if path is None:
             return "Cannot save maze: no path exists between ENTRY and EXIT"
