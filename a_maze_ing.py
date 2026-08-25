@@ -251,6 +251,7 @@ class MazeGenerator:
             for y in range(self.height)
             if (x, y) != start
         ]
+        # TODO: place_42_pattern() as visited cells
         while not_visited:
             start = random.choice(visited)
             end = random.choice(not_visited)
@@ -326,6 +327,66 @@ class MazeGenerator:
             return f"Cannot write output file: {error}"
         return None
 
+    def print(
+        self, theme: int
+    ) -> Optional[str]:
+        print("Maze print theme:", theme)
+        print("Maze print grid:", self.grid[9][2])
+        # Color pallete (aa=basic color, aa1=light, aa2=dark, aaF=foreground)
+
+        class Color:
+            gr = "\x1b[48;2;0;195;0m"  # basic green background
+            gr2F = "\x1b[38;2;0;120;0m"  # dark green background
+            yl = "\x1b[48;2;255;195;50m"  # basic yellow background
+            reset = "\x1b[0m"
+        c = Color()
+
+        class Pallete:
+            soil = c.yl + "  "
+            soil_shaded = c.yl + c.gr2F + "▀▀"
+            hedge = c.gr + "  "
+        p = Pallete()
+        output = ""
+        for row_number, row in enumerate(self.grid):
+            row_top = ""
+            row_bottom = ""
+            for cell_number, cell in enumerate(row):
+                nw = self.grid[row_number-1][cell_number-1]
+                # northwest
+                if cell.north or cell.west:
+                    row_top += p.hedge
+                else:
+                    if nw and (nw.south or nw.east):
+                        row_top += p.hedge
+                    else:
+                        row_top += p.soil
+                # north
+                if cell.north:
+                    row_top += p.hedge
+                else:
+                    row_top += p.soil
+                # west
+                if cell.west:
+                    row_bottom += p.hedge
+                else:
+                    if nw and (nw.south or nw.east):
+                        row_bottom += p.soil_shaded
+                    else:
+                        row_bottom += p.soil
+                # main
+                if str(cell) == "f":
+                    row_bottom += p.hedge
+                else:
+                    if cell.north:
+                        row_bottom += p.soil_shaded
+                    else:
+                        row_bottom += p.soil
+            row_top += p.hedge
+            row_bottom += p.hedge
+            output += row_top + c.reset + "\n" + row_bottom + c.reset + "\n"
+        output += p.hedge * (1 + 2 * len(self.grid[0])) + c.reset
+        print(output)
+
 
 def main(arguments: list[str]) -> int:
     if len(arguments) != 2:
@@ -339,6 +400,7 @@ def main(arguments: list[str]) -> int:
         config.get_width(), config.get_height(), config.get_seed()
     )
     generator.generate(config.get_algorithm())
+    generator.print(0)
     error = generator.save_output(
         config.get_output_file(), config.get_entry(), config.get_exit()
     )
