@@ -204,13 +204,14 @@ class MazeGenerator:
         self.grid = [[MazeCell() for _ in range(width)] for _ in range(height)]
         self.random = random.Random(seed)
 
-    def get_neighbors(self, current: tuple[int, int]) -> list[tuple[int, int]]:
+    def get_neighbors(self, current: tuple[int, int],allowed:list[tuple]=None) -> list[tuple[int, int]]:
         x, y = current
         neighbors: list[tuple[int, int]] = []
         candidates = ((x, y + 1), (x, y - 1), (x + 1, y), (x - 1, y))
         for cand in candidates:
             if (0 <= cand[0] < self.width and 0 <= cand[1] < self.height):
-                neighbors.append(cand)
+                if(allowed is None or cand in allowed):
+                    neighbors.append(cand)
         return neighbors
 
     def open_passage(
@@ -249,44 +250,39 @@ class MazeGenerator:
             if not self.grid[ny][nx].visited:
                 self.open_passage(current, next_cell)
                 self.generate_dfs(next_cell)
-
     def generate_walk(self) -> None:
-        start = (
-            self.random.randrange(self.width),
-            self.random.randrange(self.height)
-        )
-        self.grid[start[1]][start[0]].visited = True
-        # TODO: place_42_pattern() as visited cells
-        visited = [start]
-        not_visited = [
+        allowed = [
             (x, y) for x in range(self.width)
             for y in range(self.height)
-            if (x, y) != start
+            if not self.grid[y][x].visited
+        ]
+        start=random.choice(allowed)
+        visited = [start]
+        not_visited = [
+            bloc for bloc in allowed
+            if bloc != start
         ]
         while not_visited:
             start = self.random.choice(visited)
             end = self.random.choice(not_visited)
             while start != end:
-                neighbors = self.get_neighbors(start)
+                neighbors = self.get_neighbors(start,allowed)
                 neighbors_not = [
                     (nx, ny) for (nx, ny) in neighbors
-                    if not self.grid[ny][nx].visited
+                    if (nx,ny) not in visited
                 ]
                 if neighbors_not:
                     next_visit = self.random.choice(neighbors_not)
                     nx, ny = next_visit
-                    self.grid[ny][nx].visited = True
                     self.open_passage(start, next_visit)
                     visited.append(next_visit)
                     not_visited.remove(next_visit)
                     start = next_visit
-                    break
                 else:
-                    if neighbors:
-                        start = self.random.choice(neighbors)
+                    start = self.random.choice(visited)
 
     def generate(self, algorithm: str) -> None:
-        if algorithm != "walk" and self.width >= 9 and self.height >= 7:
+        if self.width >= 9 and self.height >= 7:
             self.place_42_pattern(self.width//2, self.height//2)
         else:
             print("Map was generated without the 42 pattern.")
@@ -353,6 +349,7 @@ class MazeGenerator:
                 "yl": "\x1b[48;2;255;195;50m",  # basic yellow
                 "rd": "\x1b[48;2;180;0;0m",  # red
                 "pr": "\x1b[48;2;180;0;255m",  # purple
+                "be": "\x1b[48;2;0;0;255m",      # blue
                 "0": "\x1b[0m"  # reset
             }
 
@@ -362,6 +359,7 @@ class MazeGenerator:
                 hedge = c["gr"] + "  "
                 entry_point = c["rd"] + "  "
                 exit_point = c["pr"] + "  "
+                closed_cell=c["be"] + "  "
             p = Pallete()
             output = ""
             for row_number, row in enumerate(self.grid):
@@ -392,7 +390,7 @@ class MazeGenerator:
                             row_bottom += p.soil
                     # main
                     if str(cell) == "f":
-                        row_bottom += p.hedge
+                        row_bottom += p.closed_cell
                     else:
                         if (cell_number, row_number) == entry:
                             row_bottom += p.entry_point
