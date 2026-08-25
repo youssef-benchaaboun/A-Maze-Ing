@@ -231,6 +231,14 @@ class MazeGenerator:
             self.grid[y1][x1].north = 0
             self.grid[y2][x2].south = 0
 
+    def place_42_pattern(self, x: int, y: int) -> None:
+        for cell in [
+            (-2, -3), (-1, -3), (0, -3), (0, -2), (0, -1), (1, -1), (2, -1),
+            (-2, 1), (-2, 2), (-2, 3), (-1, 3), (0, 3), (0, 2), (0, 1),
+            (2, 1), (2, 2), (2, 3), (1, 1)
+        ]:
+            self.grid[y + cell[0]][x + cell[1]].visited = True
+
     def generate_dfs(self, current: tuple[int, int] = (0, 0)) -> None:
         x, y = current
         self.grid[y][x].visited = True
@@ -243,18 +251,21 @@ class MazeGenerator:
                 self.generate_dfs(next_cell)
 
     def generate_walk(self) -> None:
-        start = (random.randrange(self.width), random.randrange(self.height))
+        start = (
+            self.random.randrange(self.width),
+            self.random.randrange(self.height)
+        )
         self.grid[start[1]][start[0]].visited = True
+        # TODO: place_42_pattern() as visited cells
         visited = [start]
         not_visited = [
             (x, y) for x in range(self.width)
             for y in range(self.height)
             if (x, y) != start
         ]
-        # TODO: place_42_pattern() as visited cells
         while not_visited:
-            start = random.choice(visited)
-            end = random.choice(not_visited)
+            start = self.random.choice(visited)
+            end = self.random.choice(not_visited)
             while start != end:
                 neighbors = self.get_neighbors(start)
                 neighbors_not = [
@@ -262,7 +273,7 @@ class MazeGenerator:
                     if not self.grid[ny][nx].visited
                 ]
                 if neighbors_not:
-                    next_visit = random.choice(neighbors_not)
+                    next_visit = self.random.choice(neighbors_not)
                     nx, ny = next_visit
                     self.grid[ny][nx].visited = True
                     self.open_passage(start, next_visit)
@@ -272,9 +283,13 @@ class MazeGenerator:
                     break
                 else:
                     if neighbors:
-                        start = random.choice(neighbors)
+                        start = self.random.choice(neighbors)
 
     def generate(self, algorithm: str) -> None:
+        if algorithm != "walk" and self.width >= 9 and self.height >= 7:
+            self.place_42_pattern(self.width//2, self.height//2)
+        else:
+            print("Map was generated without the 42 pattern.")
         if algorithm == "walk":
             self.generate_walk()
         else:
@@ -331,7 +346,7 @@ class MazeGenerator:
         self, theme: int
     ) -> Optional[str]:
         if theme == 0:
-            # Color pallete (aa=basic color, aa1=light, aa2=dark, aaF=foreground)
+            # Color pallete (aa=basic, aa1=light, aa2=dark, aaF=foreground)
             c = {
                 "gr": "\x1b[48;2;0;195;0m",  # basic green background
                 "gr2F": "\x1b[38;2;0;120;0m",  # dark green background
