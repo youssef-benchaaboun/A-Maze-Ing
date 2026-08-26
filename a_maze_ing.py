@@ -1,6 +1,8 @@
 import random
 import sys
 from typing import Optional
+import termios
+import tty
 
 
 class MazeConfig:
@@ -409,35 +411,132 @@ class MazeGenerator:
                 row_bottom += p.hedge
                 output += row_top + c["0"] + "\n" + row_bottom + c["0"] + "\n"
             output += p.hedge * (1 + 2 * len(self.grid[0])) + c["0"]
-            print(output)
-            return None
+            return output
         else:
             return f"Cannot find theme number: {theme}"
 
 
+class MazeApplication:
+    def __init__(self, config: MazeConfig) -> None:
+        self.config = config
+        self.generator = MazeGenerator(
+            config.get_width(), config.get_height(),
+            config.get_entry(), config.get_exit(), config.get_seed()
+        )
+        self.main_menu = ["Replay", "Solution", "Style", "Options", "Exit"]
+        self.style_submenu = ["Color42", "Theme", "Back"]
+        self.options_submenu = ["Algorithm", "Animation", "Back"]
+
+
+    @staticmethod
+    def get_key():
+        fd = sys.stdin.fileno()
+        old_settings = termios.tcgetattr(fd)
+        try:
+            tty.setraw(fd) # more powerful than cbreak, but disables Ctrl+C
+            ch = sys.stdin.read(1)
+            if ch == "\x1b":
+                ch += sys.stdin.read(2)
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+        return ch
+
+    def render_menu(self, selected: int) -> None:
+        options = []
+        show_path_option = 0;
+        path_checkbox = "☑" if show_path_option else "☐"
+        c = {
+            "oc": "\x1b[48;2;0;0;90m",  # ocean blue
+            "oc1": "\x1b[48;2;0;0;190m",  # lighter
+            "whF": "\x1b[38;2;215;215;215m",  # white 
+            "0": "\x1b[0m",  # reset
+        }
+        for i, option in enumerate(self.main_menu):
+            if option == "Solution":
+                option = f"{path_checkbox} {option}"
+            if i == selected:
+                options.append(c["oc1"] + f" {option} " + c["oc"])
+            else:
+                options.append(f" {option} ")
+        print(c["oc"] + c["whF"] + "\n")
+        print(
+            f" {options[0]}"
+            f"{options[1]}"
+            f"{options[2]}"
+            f"{options[3]}"
+            f"{options[4]}"
+            "\n" + c["0"]
+        )
+        
+    def print_control(self, maze_output: str, maze_height: int) -> None:
+        manu_selected = 0
+        print(maze_output)
+        self.render_menu(manu_selected)
+
+        while True:
+            key = self.get_key()
+            if key == "\x1b[D":
+                manu_selected = (manu_selected - 1) % len(self.main_menu)
+            elif key == "\x1b[C":
+                manu_selected = (manu_selected + 1) % len(self.main_menu)
+            elif key in ("\n", "\r"):
+                match self.main_menu[manu_selected]:
+                    case "Replay":
+                        lines_up = "\x1b[" + str(maze_height*2 + 5) + "A"
+                        print(lines_up, end="")
+                        sys.stdout.flush()
+                        self.generator = MazeGenerator(
+                            self.config.get_width(), self.config.get_height(),
+                            self.config.get_entry(), self.config.get_exit(),
+                            random.randint(0, 999)
+                        )
+                        maze_output = self.generator.print(0)
+                        print(maze_output)
+                        self.render_menu(manu_selected)
+                    case "Solution":
+                        # Toggle show/hide solution path
+                        pass
+                    case "Style":
+                        # Open styling and colors submenu
+                        pass
+                    case "Options":
+                        # Open options submenu
+                        pass
+                    case "Exit":
+                        return
+            else:
+                continue
+
+            print("\x1b[4A", end="") # 4 lines up (A)
+            sys.stdout.flush()
+            self.render_menu(manu_selected)
+
+
+    def run(self) -> int:
+        self.generator.generate(self.config.get_algorithm())
+        output = self.generator.print(0)
+        self.print_control(output, self.generator.height)
+        error = self.generator.save_output(
+            self.config.get_output_file()
+        )
+        if error:
+            print(error, file=sys.stderr)
+            return 1
+        print(f"Maze saved to {self.config.get_output_file()}")
+        return 0
+    
 def main(arguments: list[str]) -> int:
     if len(arguments) != 2:
         print(f"Usage: {arguments[0]} config.txt", file=sys.stderr)
         return 1
+
     config, error = ConfigLoader.load_config(arguments[1])
     if error or config is None:
         print(f"Configuration error: {error}", file=sys.stderr)
         return 1
-    generator = MazeGenerator(
-        config.get_width(), config.get_height(),
-        config.get_entry(), config.get_exit(), config.get_seed()
-    )
-    generator.generate(config.get_algorithm())
-    
-    generator.print(0)
-    error = generator.save_output(
-        config.get_output_file()
-    )
-    if error:
-        print(error, file=sys.stderr)
-        return 1
-    print(f"Maze saved to {config.get_output_file()}")
-    return 0
+
+    application = MazeApplication(config)
+    return application.run()
 
 
 if __name__ == "__main__":
