@@ -16,6 +16,8 @@ class MazeConfig:
         perfect: bool,
         algorithm: str,
         seed: Optional[int],
+        animate: Optional[bool],
+        show_path: Optional[bool],
     ) -> None:
         self._width = width
         self._height = height
@@ -25,6 +27,8 @@ class MazeConfig:
         self._perfect = perfect
         self._algorithm = algorithm
         self._seed = seed
+        self._animate = animate
+        self._show_path = show_path
 
     def get_width(self) -> int:
         return self._width
@@ -50,13 +54,25 @@ class MazeConfig:
     def get_seed(self) -> Optional[int]:
         return self._seed
 
+    def get_animate(self) -> Optional[bool]:
+        return self._animate
+
+    def set_animate(self, value: bool) -> None:
+        self._animate = value
+
+    def get_show_path(self) -> Optional[bool]:
+        return self._show_path
+
+    def set_show_path(self, value: bool) -> None:
+        self._show_path = value
+
 
 class ConfigLoader:
 
     REQUIRED_KEYS = (
         "WIDTH", "HEIGHT", "ENTRY", "EXIT", "OUTPUT_FILE", "PERFECT"
     )
-    OPTIONAL_KEYS = ("ALGORITHM", "SEED")
+    OPTIONAL_KEYS = ("ALGORITHM", "SEED", "ANIMATE", "SHOW_PATH")
     VALID_KEYS = REQUIRED_KEYS + OPTIONAL_KEYS
 
     @staticmethod
@@ -143,10 +159,12 @@ class ConfigLoader:
         entry, entry_error = cls._parse_point(raw["ENTRY"])
         exit_point, exit_error = cls._parse_point(raw["EXIT"])
         perfect, perfect_error = cls._parse_bool(raw["PERFECT"])
+        animate, animate_error = cls._parse_bool(raw["ANIMATE"])
+        show_path, show_path_error = cls._parse_bool(raw["SHOW_PATH"])
         errors = [
             item for item in (
                 width_error, height_error, entry_error, exit_error,
-                perfect_error,
+                perfect_error, animate_error, show_path_error
             ) if item
         ]
         output_file = raw["OUTPUT_FILE"].strip()
@@ -176,7 +194,7 @@ class ConfigLoader:
             return None, "\n".join(errors)
         return MazeConfig(
             width, height, entry, exit_point, output_file, perfect,
-            algorithm, seed,
+            algorithm, seed, animate, show_path
         ), None
 
 
@@ -415,7 +433,6 @@ class MazeGenerator:
         else:
             return f"Cannot find theme number: {theme}"
 
-
 class MazeApplication:
     def __init__(self, config: MazeConfig) -> None:
         self.config = config
@@ -423,10 +440,11 @@ class MazeApplication:
             config.get_width(), config.get_height(),
             config.get_entry(), config.get_exit(), config.get_seed()
         )
-        self.main_menu = ["Replay", "Solution", "Style", "Options", "Exit"]
-        self.style_submenu = ["Color42", "Theme", "Back"]
-        self.options_submenu = ["Algorithm", "Animation", "Back"]
-
+        self.menu_options = [
+            ["Replay", "Style", "Options", "Exit"],
+            ["Color42", "Theme", "Back"],
+            ["Path", "Animate", "Algorithm", "Back"]
+        ]
 
     @staticmethod
     def get_key():
@@ -441,46 +459,46 @@ class MazeApplication:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
         return ch
 
-    def render_menu(self, selected: int) -> None:
+    def render_menu(self, selected: int, menu: list[str]) -> None:
         options = []
-        show_path_option = 0;
-        path_checkbox = "☑" if show_path_option else "☐"
+        show_path_checkbox = "☑" if self.config.get_show_path() else "☐"
+        show_animate_checkbox = "☑" if self.config.get_animate() else "☐"
+
         c = {
             "oc": "\x1b[48;2;0;0;90m",  # ocean blue
             "oc1": "\x1b[48;2;0;0;190m",  # lighter
             "whF": "\x1b[38;2;215;215;215m",  # white 
             "0": "\x1b[0m",  # reset
         }
-        for i, option in enumerate(self.main_menu):
-            if option == "Solution":
-                option = f"{path_checkbox} {option}"
+        for i, option in enumerate(menu):
+            if option == "Path":
+                option = f"{show_path_checkbox} {option}"
+            elif option == "Animate":
+                option = f"{show_animate_checkbox} {option}"
             if i == selected:
                 options.append(c["oc1"] + f" {option} " + c["oc"])
             else:
                 options.append(f" {option} ")
         print(c["oc"] + c["whF"] + "\n")
-        print(
-            f" {options[0]}"
-            f"{options[1]}"
-            f"{options[2]}"
-            f"{options[3]}"
-            f"{options[4]}"
-            "\n" + c["0"]
-        )
-        
+        for option in options:
+            print(f" {option}", end="")
+        print("             ", end="")
+        print("\n" + c["0"])
+
     def print_control(self, maze_output: str, maze_height: int) -> None:
-        manu_selected = 0
+        menu_sel = 0
+        menu = self.menu_options[0]
         print(maze_output)
-        self.render_menu(manu_selected)
+        self.render_menu(menu_sel, menu)
 
         while True:
             key = self.get_key()
             if key == "\x1b[D":
-                manu_selected = (manu_selected - 1) % len(self.main_menu)
+                menu_sel = (menu_sel - 1) % len(menu)
             elif key == "\x1b[C":
-                manu_selected = (manu_selected + 1) % len(self.main_menu)
+                menu_sel = (menu_sel + 1) % len(menu)
             elif key in ("\n", "\r"):
-                match self.main_menu[manu_selected]:
+                match menu[menu_sel]:
                     case "Replay":
                         lines_up = "\x1b[" + str(maze_height*2 + 5) + "A"
                         print(lines_up, end="")
@@ -492,29 +510,38 @@ class MazeApplication:
                         )
                         maze_output = self.generator.print(0)
                         print(maze_output)
-                        self.render_menu(manu_selected)
-                    case "Solution":
-                        # Toggle show/hide solution path
-                        pass
+                        self.render_menu(menu_sel, menu)
+                    case "Path":
+                        self.config.set_show_path(
+                            not self.config.get_show_path()
+                        )
+                    case "Animate":
+                        self.config.set_animate(not self.config.get_animate())
                     case "Style":
-                        # Open styling and colors submenu
-                        pass
+                        menu = self.menu_options[1]
+                        menu_sel = 0
                     case "Options":
-                        # Open options submenu
+                        menu = self.menu_options[2]
+                        menu_sel = 0
+                    case "Back":
+                        menu = self.menu_options[0]
+                        menu_sel = 0
                         pass
                     case "Exit":
                         return
             else:
                 continue
 
-            print("\x1b[4A", end="") # 4 lines up (A)
+            print("\x1b[4A", end="")  # 4 lines up (A)
             sys.stdout.flush()
-            self.render_menu(manu_selected)
-
+            self.render_menu(menu_sel, menu)
 
     def run(self) -> int:
         self.generator.generate(self.config.get_algorithm())
         output = self.generator.print(0)
+        if output is None:
+            print("Render maze error.", file=sys.stderr)
+            return 1
         self.print_control(output, self.generator.height)
         error = self.generator.save_output(
             self.config.get_output_file()
@@ -524,7 +551,8 @@ class MazeApplication:
             return 1
         print(f"Maze saved to {self.config.get_output_file()}")
         return 0
-    
+
+
 def main(arguments: list[str]) -> int:
     if len(arguments) != 2:
         print(f"Usage: {arguments[0]} config.txt", file=sys.stderr)

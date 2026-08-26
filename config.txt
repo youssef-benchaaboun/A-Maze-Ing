@@ -1,9 +1,11 @@
 # Default A-Maze-ing configuration
 WIDTH=19
 HEIGHT=11
-ENTRY=8,9
-EXIT=0,0
+ENTRY=0,0
+EXIT=1,1
 OUTPUT_FILE=maze.txt
 PERFECT=True
 ALGORITHM=walk
 SEED=60
+ANIMATE=False
+SHOW_PATH=False
