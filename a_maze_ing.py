@@ -197,12 +197,15 @@ class MazeCell:
 
 class MazeGenerator:
     def __init__(
-        self, width: int, height: int, seed: Optional[int] = None
+        self, width: int, height: int, entry: tuple[int, int],
+        exit_point: tuple[int, int], seed: Optional[int] = None
     ) -> None:
         self.width = width
         self.height = height
         self.grid = [[MazeCell() for _ in range(width)] for _ in range(height)]
         self.random = random.Random(seed)
+        self.entry = entry
+        self.exit_point = exit_point
 
     def get_neighbors(self, current: tuple[int, int],allowed:list[tuple]=None) -> list[tuple[int, int]]:
         x, y = current
@@ -250,6 +253,7 @@ class MazeGenerator:
             if not self.grid[ny][nx].visited:
                 self.open_passage(current, next_cell)
                 self.generate_dfs(next_cell)
+
     def generate_walk(self) -> None:
         allowed = [
             (x, y) for x in range(self.width)
@@ -292,12 +296,12 @@ class MazeGenerator:
             self.generate_dfs()
 
     def find_path(
-        self, current: tuple[int, int], exit_point: tuple[int, int],
+        self, current: tuple[int, int],
         path: str = "", visited: Optional[set[tuple[int, int]]] = None
     ) -> Optional[str]:
         if visited is None:
             visited = set()
-        if current == exit_point:
+        if current == self.exit_point:
             return path
         x1, y1 = current
         visited.add(current)
@@ -315,22 +319,21 @@ class MazeGenerator:
             elif y1 - 1 == y2 and self.grid[y1][x1].north == 0:
                 next_path = path + "N"
             if next_path is not None:
-                result = self.find_path(cell, exit_point, next_path, visited)
+                result = self.find_path(cell, next_path, visited)
                 if result is not None:
                     return result
         visited.remove(current)
         return None
 
     def save_output(
-        self, output_file: str, entry: tuple[int, int],
-        exit_point: tuple[int, int]
+        self, output_file: str
     ) -> Optional[str]:
-        path = self.find_path(entry, exit_point)
+        path = self.find_path(self.entry)
         if path is None:
             return "Cannot save maze: no path exists between ENTRY and EXIT"
         lines = ["".join(str(cell) for cell in row) for row in self.grid]
-        lines.extend(("", f"entry :{entry[0]},{entry[1]}",
-                      f"exit:{exit_point[0]},{exit_point[1]}", path))
+        lines.extend(("", f"entry :{self.entry[0]},{self.entry[1]}",
+                      f"exit:{self.exit_point[0]},{self.exit_point[1]}", path))
         try:
             with open(output_file, "w", encoding="utf-8") as maze_file:
                 maze_file.write("\n".join(lines) + "\n")
@@ -339,7 +342,7 @@ class MazeGenerator:
         return None
 
     def print(
-        self, theme: int, entry: tuple[int, int], exit_point: tuple[int, int]
+        self, theme: int
     ) -> Optional[str]:
         if theme == 0:
             # Color pallete (aa=basic, aa1=light, aa2=dark, aaF=foreground)
@@ -349,7 +352,9 @@ class MazeGenerator:
                 "yl": "\x1b[48;2;255;195;50m",  # basic yellow
                 "rd": "\x1b[48;2;180;0;0m",  # red
                 "pr": "\x1b[48;2;180;0;255m",  # purple
-                "be": "\x1b[48;2;0;0;255m",      # blue
+                "be": "\x1b[48;2;0;0;255m",  # blue
+                "wh": "\x1b[48;2;215;215;215m",  # white
+                "blF": "\x1b[38;2;30;30;30m",  # black fg
                 "0": "\x1b[0m"  # reset
             }
 
@@ -357,8 +362,8 @@ class MazeGenerator:
                 soil = c["yl"] + "  "
                 soil_shaded = c["yl"] + c["gr2F"] + "▀▀"
                 hedge = c["gr"] + "  "
-                entry_point = c["rd"] + "  "
-                exit_point = c["pr"] + "  "
+                entry_point = c["blF"] + "██"
+                exit_point = c["wh"] + c["blF"] + "▀▄"
                 closed_cell=c["be"] + "  "
             p = Pallete()
             output = ""
@@ -392,9 +397,9 @@ class MazeGenerator:
                     if str(cell) == "f":
                         row_bottom += p.closed_cell
                     else:
-                        if (cell_number, row_number) == entry:
+                        if (cell_number, row_number) == self.entry:
                             row_bottom += p.entry_point
-                        elif (cell_number, row_number) == exit_point:
+                        elif (cell_number, row_number) == self.exit_point:
                             row_bottom += p.exit_point
                         elif cell.north:
                             row_bottom += p.soil_shaded
@@ -419,12 +424,14 @@ def main(arguments: list[str]) -> int:
         print(f"Configuration error: {error}", file=sys.stderr)
         return 1
     generator = MazeGenerator(
-        config.get_width(), config.get_height(), config.get_seed()
+        config.get_width(), config.get_height(),
+        config.get_entry(), config.get_exit(), config.get_seed()
     )
     generator.generate(config.get_algorithm())
-    generator.print(0, config.get_entry(), config.get_exit())
+    
+    generator.print(0)
     error = generator.save_output(
-        config.get_output_file(), config.get_entry(), config.get_exit()
+        config.get_output_file()
     )
     if error:
         print(error, file=sys.stderr)
