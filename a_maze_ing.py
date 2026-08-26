@@ -54,6 +54,9 @@ class MazeConfig:
     def get_seed(self) -> Optional[int]:
         return self._seed
 
+    def set_seed(self, value: int) -> None:
+        self._seed = value
+
     def get_animate(self) -> Optional[bool]:
         return self._animate
 
@@ -503,11 +506,8 @@ class MazeApplication:
                         lines_up = "\x1b[" + str(maze_height*2 + 5) + "A"
                         print(lines_up, end="")
                         sys.stdout.flush()
-                        self.generator = MazeGenerator(
-                            self.config.get_width(), self.config.get_height(),
-                            self.config.get_entry(), self.config.get_exit(),
-                            random.randint(0, 999)
-                        )
+                        self.generator.generate(self.config.get_algorithm())
+                        self.config.set_seed(random.randint(0, 999))
                         maze_output = self.generator.print(0)
                         print(maze_output)
                         self.render_menu(menu_sel, menu)
