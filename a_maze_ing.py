@@ -546,6 +546,8 @@ class MazeApplication:
                         self.config.set_show_path(
                             not self.config.get_show_path()
                         )
+                        MazeRenderer(self.config, self.generator)
+                        self.render_menu(menu_sel, menu)
                     case "Animate":
                         self.config.set_animate(not self.config.get_animate())
                     case "Style":

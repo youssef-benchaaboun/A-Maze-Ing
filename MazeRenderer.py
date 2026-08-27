@@ -269,7 +269,7 @@ class SiliconRenderer(ThemeRenderer):
         elif self.exit_point == ((cell-1)/2, (row-1)/2):
             return self.tile_exit + self.row_prefix
         elif self.map[row][cell] == 3:
-            return "▫️ "
+            return "▪️ "
         else:
             return "  "
 
