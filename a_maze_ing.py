@@ -195,8 +195,8 @@ class ConfigLoader:
         if not output_file:
             errors.append("OUTPUT_FILE: Value cannot be empty")
         algorithm = raw.get("ALGORITHM", "dfs").lower()
-        if algorithm not in ("dfs", "walk"):
-            errors.append("ALGORITHM must be dfs or walk")
+        if algorithm not in ("dfs", "walk","couple"):
+            errors.append("ALGORITHM must be dfs or walk or couple")
         seed: Optional[int] = None
         if "SEED" in raw:
             try:
@@ -316,6 +316,28 @@ class MazeGenerator:
                 self.open_passage(current, next_cell)
                 self.generate_dfs(next_cell)
 
+    def generate_couple(self) -> None:
+        start=(0,0)
+        self.grid[0][0].visited=True
+        couple_list=[]
+        for near in self.get_neighbors(start):
+            couple_list.append((start,near))
+        self.random.shuffle(couple_list)
+
+        while(couple_list):
+            p1,p2=couple_list[0]
+            couple_list.remove((p1,p2))
+            x,y=p2
+    
+            if not self.grid[y][x].visited:
+                self.grid[y][x].visited=True
+                self.open_passage(p1,p2)
+                for near in self.get_neighbors(p2):
+                    xn,yn=near
+                    if not self.grid[yn][xn].visited:
+                        couple_list.append((p2,near))
+                self.random.shuffle(couple_list)
+
     def generate_walk(self) -> None:
         allowed = [
             (x, y) for x in range(self.width)
@@ -354,6 +376,8 @@ class MazeGenerator:
             print("Map was generated without the 42 pattern.")
         if algorithm == "walk":
             self.generate_walk()
+        elif algorithm=="couple":
+            self.generate_couple()
         else:
             self.generate_dfs()
 
