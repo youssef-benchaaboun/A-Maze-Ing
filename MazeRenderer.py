@@ -77,7 +77,11 @@ class MazeRenderer:
         return map
 
     def print_maze(self, map: list[list[int]]) -> None:
-        data = (map, self.config.get_entry(), self.config.get_exit())
+        data = (
+            map,
+            self.config.get_entry(), self.config.get_exit(),
+            self.config.get_color42()
+        )
         match self.config.get_theme():
             case "Basic":
                 maze = BasicRenderer(data)
@@ -96,6 +100,7 @@ class ThemeRenderer(ABC):
         self.map = data[0]
         self.entry = data[1]
         self.exit_point = data[2]
+        self.color42 = data[3]
         self.row_length = len(self.map[0])
         self.reset = "\x1b[0m"
         self.tile_entry = "\x1b[38;2;30;30;30m" + "██"
@@ -108,6 +113,14 @@ class ThemeRenderer(ABC):
     @abstractmethod
     def render_floor(self, row: int, cell: int) -> str:
         pass
+
+    def is_cell_42(self, row: int, cell: int) -> int:
+        return (cell % 2 and row % 2
+            and cell-1 > 0 and self.map[row][cell-1]
+            and row - 1 > 0 and self.map[row-1][cell]
+            and cell + 1 < self.row_length and self.map[row][cell+1]
+            and row + 1 < len(self.map) and self.map[row+1][cell]
+        )
 
     def render_row(self, row: int) -> str:
         output = self.row_prefix
@@ -141,6 +154,8 @@ class HedgeRenderer(ThemeRenderer):
         map = self.map
         c = self.color_pallete
         row_length = len(map[row])
+        c["42"] = f"\x1b[48;2;{self.color42}m" if self.color42 else c["gr"]
+
         if cell >= 0 and map[row][cell-1] != 1:
             wall = c["gr"]+c["gr2F"] + "▏"
         else:
@@ -155,6 +170,8 @@ class HedgeRenderer(ThemeRenderer):
                 wall += c["gr1F"]+"▔"
             else:
                 wall += " "
+        if self.is_cell_42(row, cell):
+            wall = c["42"] + "  "
         return wall
 
     def render_floor(self, row: int, cell: int) -> str:
@@ -224,6 +241,8 @@ class PacmanRenderer(ThemeRenderer):
             wall = " ◉"
         else:
             wall = "◆ "
+        if self.color42 and self.is_cell_42(row, cell):
+            wall = f"\x1b[38;2;{self.color42}m" + "╬╬" + self.row_prefix
         return wall
 
     def render_floor(self, row: int, cell: int) -> str:
@@ -249,6 +268,8 @@ class SiliconRenderer(ThemeRenderer):
             return self.map[y][x] == 1
 
     def render_wall(self, row: int, cell: int) -> str:
+        if self.color42 and self.is_cell_42(row, cell):
+            return f"\x1b[38;2;{self.color42}m" + "╬╬" + self.row_prefix
         # vertical wall
         if self.c(row-1, cell) and self.c(row+1, cell):
             return "║║"
@@ -279,15 +300,13 @@ class BasicRenderer(ThemeRenderer):
         "whF": "\x1b[38;2;255;255;255m",  # white yellow fg
         "rdF": "\x1b[38;2;255;30;30m",  # red fg
     }
+
     def render_wall(self, row: int, cell: int) -> str:
-        map = self.map
-        if (cell % 2 and row % 2
-            and cell-1 >= 0 and map[row][cell-1]
-            and row - 1 >= 0 and map[row-1][cell]
-            and cell + 1 < self.row_length and map[row][cell+1]
-            and row + 1 < len(map) and map[row+1][cell]
-            ):
-            return self.color_pallete["whF"] + "██" + self.reset
+        if self.is_cell_42(row, cell):
+            color42 = "\x1b[38;2;"
+            color42 += self.color42 if self.color42 != "" else "255;255;255"
+            color42 += "m"
+            return color42 + "██" + self.reset
         else:
             return "▒▒"
 
