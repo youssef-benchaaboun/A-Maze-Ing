@@ -1,6 +1,7 @@
 import random
 import sys
 from typing import Optional
+from MazeRenderer import MazeRenderer
 import termios
 import tty
 
@@ -18,6 +19,7 @@ class MazeConfig:
         seed: Optional[int],
         animate: Optional[bool],
         show_path: Optional[bool],
+        theme: Optional[str],
     ) -> None:
         self._width = width
         self._height = height
@@ -29,6 +31,7 @@ class MazeConfig:
         self._seed = seed
         self._animate = animate
         self._show_path = show_path
+        self._theme = theme
 
     def get_width(self) -> int:
         return self._width
@@ -69,13 +72,19 @@ class MazeConfig:
     def set_show_path(self, value: bool) -> None:
         self._show_path = value
 
+    def get_theme(self) -> Optional[str]:
+        return self._theme
+
+    def set_theme(self, value: str) -> None:
+        self._theme = value
+
 
 class ConfigLoader:
 
     REQUIRED_KEYS = (
         "WIDTH", "HEIGHT", "ENTRY", "EXIT", "OUTPUT_FILE", "PERFECT"
     )
-    OPTIONAL_KEYS = ("ALGORITHM", "SEED", "ANIMATE", "SHOW_PATH")
+    OPTIONAL_KEYS = ("ALGORITHM", "SEED", "ANIMATE", "SHOW_PATH", "THEME")
     VALID_KEYS = REQUIRED_KEYS + OPTIONAL_KEYS
 
     @staticmethod
@@ -146,6 +155,13 @@ class ConfigLoader:
         if normalized == "false":
             return False, None
         return None, f"Invalid boolean value: {value}"
+    
+    @staticmethod
+    def _parse_theme(value: str) -> tuple[Optional[str], Optional[str]]:
+        normalized = value.capitalize()
+        if normalized in ["Hedge", "Pacman", "Basic", "Silicon"]:
+            return normalized, None
+        return None, f"Invalid theme value: {value}"
 
     @classmethod
     def load_config(
@@ -162,12 +178,10 @@ class ConfigLoader:
         entry, entry_error = cls._parse_point(raw["ENTRY"])
         exit_point, exit_error = cls._parse_point(raw["EXIT"])
         perfect, perfect_error = cls._parse_bool(raw["PERFECT"])
-        animate, animate_error = cls._parse_bool(raw["ANIMATE"])
-        show_path, show_path_error = cls._parse_bool(raw["SHOW_PATH"])
         errors = [
             item for item in (
                 width_error, height_error, entry_error, exit_error,
-                perfect_error, animate_error, show_path_error
+                perfect_error
             ) if item
         ]
         output_file = raw["OUTPUT_FILE"].strip()
@@ -182,6 +196,24 @@ class ConfigLoader:
                 seed = int(raw["SEED"])
             except ValueError:
                 errors.append(f"SEED: Invalid integer value: {raw['SEED']}")
+        animate: Optional[bool] = None
+        if "ANIMATE" in raw:
+            try:
+                animate, animate_error = cls._parse_bool(raw["ANIMATE"])
+            except ValueError:
+                errors.append(f"ANIMATE: Invalid value: {raw['ANIMATE']}")
+        show_path: Optional[bool] = None
+        if "SHOW_PATH" in raw:
+            try:
+                show_path, show_path_error = cls._parse_bool(raw["SHOW_PATH"])
+            except ValueError:
+                errors.append(f"SHOW_PATH: Invalid value: {raw['SHOW_PATH']}")
+        theme: Optional[str] = None
+        if "THEME" in raw:
+            try:
+                theme = str(raw["THEME"]).capitalize()
+            except ValueError:
+                errors.append(f"THEME: Invalid value: {raw['THEME']}")
 
         for name, point in (("ENTRY", entry), ("EXIT", exit_point)):
             if point[0] >= width or point[1] >= height:
@@ -197,7 +229,7 @@ class ConfigLoader:
             return None, "\n".join(errors)
         return MazeConfig(
             width, height, entry, exit_point, output_file, perfect,
-            algorithm, seed, animate, show_path
+            algorithm, seed, animate, show_path, theme
         ), None
 
 
@@ -445,8 +477,9 @@ class MazeApplication:
         )
         self.menu_options = [
             ["Replay", "Style", "Options", "Exit"],
-            ["Color42", "Theme", "Back"],
-            ["Path", "Animate", "Algorithm", "Back"]
+            ["Theme", "Color42", "Back"],
+            ["Path", "Animate", "Algorithm", "Back"],
+            ["Hedge", "Pacman", "Basic", "Silicon"]
         ]
 
     @staticmethod
@@ -491,7 +524,7 @@ class MazeApplication:
     def print_control(self, maze_output: str, maze_height: int) -> None:
         menu_sel = 0
         menu = self.menu_options[0]
-        print(maze_output)
+        MazeRenderer(self.config, self.generator)
         self.render_menu(menu_sel, menu)
 
         while True:
@@ -505,11 +538,9 @@ class MazeApplication:
                     case "Replay":
                         lines_up = "\x1b[" + str(maze_height*2 + 5) + "A"
                         print(lines_up, end="")
-                        sys.stdout.flush()
-                        self.generator.generate(self.config.get_algorithm())
                         self.config.set_seed(random.randint(0, 999))
-                        maze_output = self.generator.print(0)
-                        print(maze_output)
+                        self.generator.generate(self.config.get_algorithm())
+                        MazeRenderer(self.config, self.generator)
                         self.render_menu(menu_sel, menu)
                     case "Path":
                         self.config.set_show_path(
@@ -523,6 +554,15 @@ class MazeApplication:
                     case "Options":
                         menu = self.menu_options[2]
                         menu_sel = 0
+                    case "Theme":
+                        menu = self.menu_options[3]
+                        menu_sel = 0
+                    case "Hedge" | "Pacman" | "Basic" | "Silicon":
+                        self.config.set_theme(menu[menu_sel])
+                        menu = self.menu_options[1]
+                        menu_sel = 0
+                        MazeRenderer(self.config, self.generator)
+                        self.render_menu(menu_sel, menu)
                     case "Back":
                         menu = self.menu_options[0]
                         menu_sel = 0

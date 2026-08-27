@@ -9,3 +9,4 @@ ALGORITHM=walk
 SEED=60
 ANIMATE=False
 SHOW_PATH=False
+THEME=Hedge
