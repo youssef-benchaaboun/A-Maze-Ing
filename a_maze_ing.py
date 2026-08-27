@@ -497,8 +497,8 @@ class MazeApplication:
 
     def render_menu(self, selected: int, menu: list[str]) -> None:
         options = []
-        show_path_checkbox = "☑" if self.config.get_show_path() else "☐"
-        show_animate_checkbox = "☑" if self.config.get_animate() else "☐"
+        show_path_checkbox = "✔" if self.config.get_show_path() else " "
+        show_animate_checkbox = "✔" if self.config.get_animate() else " "
 
         c = {
             "oc": "\x1b[48;2;0;0;90m",  # ocean blue
@@ -508,9 +508,9 @@ class MazeApplication:
         }
         for i, option in enumerate(menu):
             if option == "Path":
-                option = f"{show_path_checkbox} {option}"
+                option = f"{show_path_checkbox}{option}"
             elif option == "Animate":
-                option = f"{show_animate_checkbox} {option}"
+                option = f"{show_animate_checkbox}{option}"
             if i == selected:
                 options.append(c["oc1"] + f" {option} " + c["oc"])
             else:

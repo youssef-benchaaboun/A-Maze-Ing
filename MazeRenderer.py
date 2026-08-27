@@ -13,6 +13,28 @@ class MazeRenderer:
         self.generator = generator
         self.print_maze(self.convert_maze())
 
+    def convert_path(self, path: str, map: list[list[int]]) -> list[list[int]]:
+        current = self.config.get_entry()
+        current = (current[0]*2+1, current[1]*2+1)
+        for c in path:
+            if c == "N":
+                map[current[1]-1][current[0]] = 3
+                map[current[1]-2][current[0]] = 3
+                current = (current[0], current[1]-2)
+            if c == "S":
+                map[current[1]+1][current[0]] = 3
+                map[current[1]+2][current[0]] = 3
+                current = (current[0], current[1]+2)
+            if c == "E":
+                map[current[1]][current[0]+1] = 3
+                map[current[1]][current[0]+2] = 3
+                current = (current[0]+2, current[1])
+            if c == "W":
+                map[current[1]][current[0]-1] = 3
+                map[current[1]][current[0]-2] = 3
+                current = (current[0]-2, current[1])
+        return map
+
     def convert_maze(self) -> list[list[int]]:
         map = []
         for row_number, row in enumerate(self.generator.grid):
@@ -48,6 +70,10 @@ class MazeRenderer:
             map.append(row_top)
             map.append(row_bottom)
         map.append([1] * (self.generator.width * 2 + 1))
+        if self.config.get_show_path():
+            map = self.convert_path(
+                self.generator.find_path(self.config.get_entry()), map
+            )
         return map
 
     def print_maze(self, map: list[list[int]]) -> None:
@@ -108,6 +134,7 @@ class HedgeRenderer(ThemeRenderer):
         "gr1F": "\x1b[38;2;0;255;0m",  # lighter green foreground
         "gr2F": "\x1b[38;2;0;120;0m",  # dark green foreground
         "yl": "\x1b[48;2;255;195;50m",  # basic yellow
+        "yl2": "\x1b[48;2;220;125;30m",  # dark yellow
     }
 
     def render_wall(self, row: int, cell: int) -> str:
@@ -136,10 +163,15 @@ class HedgeRenderer(ThemeRenderer):
             return self.tile_entry
         elif self.exit_point == ((cell-1)/2, (row-1)/2):
             return self.tile_exit
-        elif self.map[row-1][cell] == 1:
-            return c["yl"]+c["gr2F"] + "▀▀"
         else:
-            return c["yl"] + "  "
+            if self.map[row][cell] == 3:
+                floor = c["yl2"]
+            else: 
+                floor = c["yl"]
+            if self.map[row-1][cell] == 1:
+                return floor + c["gr2F"] + "▀▀"
+            else:
+                return floor + "  "
 
 
 class PacmanRenderer(ThemeRenderer):
@@ -147,11 +179,12 @@ class PacmanRenderer(ThemeRenderer):
         super().__init__(data)
         self.row_prefix = "\x1b[48;2;0;0;0m" + "\x1b[38;2;0;0;255m"
 
-    def c(self, row, cell): # return value 1/0 of a map's cell
-        if row < 0 or row >= len(self.map) or cell < 0 or cell >= self.row_length:
+    def c(self, y, x):
+        '''Returns true if 1, other numbers return 0, plus security check'''
+        if y < 0 or y >= len(self.map) or x < 0 or x >= self.row_length:
             return 0
         else:
-            return self.map[row][cell]
+            return self.map[y][x] == 1
 
     def render_wall(self, row: int, cell: int) -> str:
         # vertical wall
@@ -198,6 +231,8 @@ class PacmanRenderer(ThemeRenderer):
             return "🟡"
         elif self.exit_point == ((cell-1)/2, (row-1)/2):
             return self.tile_exit + self.row_prefix
+        elif self.map[row][cell] == 3:
+            return "▫️ "
         else:
             return "  "
 
@@ -207,11 +242,11 @@ class SiliconRenderer(ThemeRenderer):
         super().__init__(data)
         self.row_prefix = "\x1b[48;2;0;120;0m" + "\x1b[38;2;255;195;50m"
 
-    def c(self, row, cell): # return value 1/0 of a map's cell
-        if row < 0 or row >= len(self.map) or cell < 0 or cell >= self.row_length:
+    def c(self, y, x): # return value 1/0 of a map's cell
+        if y < 0 or y >= len(self.map) or x < 0 or x >= self.row_length:
             return 0
         else:
-            return self.map[row][cell]
+            return self.map[y][x] == 1
 
     def render_wall(self, row: int, cell: int) -> str:
         # vertical wall
@@ -230,14 +265,20 @@ class SiliconRenderer(ThemeRenderer):
 
     def render_floor(self, row: int, cell: int) -> str:
         if self.entry == ((cell-1)/2, (row-1)/2):
-            return "⚡"
+            return "✨"
         elif self.exit_point == ((cell-1)/2, (row-1)/2):
             return self.tile_exit + self.row_prefix
+        elif self.map[row][cell] == 3:
+            return "▫️ "
         else:
             return "  "
 
 
 class BasicRenderer(ThemeRenderer):
+    color_pallete = {
+        "whF": "\x1b[38;2;255;255;255m",  # white yellow fg
+        "rdF": "\x1b[38;2;255;30;30m",  # red fg
+    }
     def render_wall(self, row: int, cell: int) -> str:
         map = self.map
         if (cell % 2 and row % 2
@@ -246,14 +287,16 @@ class BasicRenderer(ThemeRenderer):
             and cell + 1 < self.row_length and map[row][cell+1]
             and row + 1 < len(map) and map[row+1][cell]
             ):
-            return "\x1b[38;2;255;255;255m" + "██" + self.reset
+            return self.color_pallete["whF"] + "██" + self.reset
         else:
             return "▒▒"
 
     def render_floor(self, row: int, cell: int) -> str:
         if self.entry == ((cell-1)/2, (row-1)/2):
-            return self.tile_entry + self.reset
+            return self.color_pallete["rdF"] + "▓▓" + self.reset
         elif self.exit_point == ((cell-1)/2, (row-1)/2):
             return self.tile_exit + self.reset
+        elif self.map[row][cell] == 3:
+            return "░░"
         else:
             return "  "
