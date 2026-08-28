@@ -1,0 +1,89 @@
+classDiagram
+direction TB
+
+class MazeConfig {
+    +int width
+    +int height
+    +Coordinate entry
+    +Coordinate exit
+    +str output_file
+    +bool perfect
+    +OptionalSeed seed
+    +validate() None
+}
+
+class ConfigLoader {
+    +load(path) MazeConfig
+    -parse_coordinate(value) Coordinate
+    -parse_boolean(value) bool
+}
+
+class MazeGenerator {
+    -int width
+    -int height
+    -Coordinate entry
+    -Coordinate exit
+    -bool perfect
+    -OptionalSeed seed
+    -Random rng
+    -Grid grid
+    -CoordinateSet blocked_cells
+    -Path solution
+    +generate() Grid
+    +regenerate(seed) Grid
+    +get_grid() Grid
+    +get_solution() Path
+    -initialize_all_walls() None
+    -place_42_pattern() None
+    -carve_spanning_tree() None
+    -braid_for_game_mode() None
+    -ensure_game_cells() None
+    -get_neighbors(cell) CoordinateList
+    -open_passage(first, second) None
+    -can_open_passage(first, second) bool
+    -solve_bfs() Path
+    -validate_result() None
+}
+
+class MazeWriter {
+    +write(path, grid, entry, exit, solution) None
+    -encode_grid(grid) StringList
+    -path_to_directions(path) str
+}
+
+class MazeRenderer {
+    <<abstract>>
+    +render(grid, entry, exit, solution, show_solution) None
+    +set_wall_color(color) None
+}
+
+class TerminalRenderer {
+    -str wall_color
+    -str pattern_color
+    +render(grid, entry, exit, solution, show_solution) None
+    +set_wall_color(color) None
+    -draw_cell(cell) str
+}
+
+class MazeApplication {
+    -MazeConfig config
+    -MazeGenerator generator
+    -MazeRenderer renderer
+    -MazeWriter writer
+    -bool show_solution
+    +run(config_path) None
+    -display_menu() None
+    -handle_command(command) None
+    -regenerate() None
+    -toggle_solution() None
+    -change_color() None
+    -save_output() None
+}
+
+ConfigLoader --> MazeConfig : creates
+MazeApplication ..> ConfigLoader : loads configuration
+MazeApplication o-- MazeConfig : stores
+MazeApplication *-- MazeGenerator : controls
+MazeApplication o-- MazeRenderer : uses
+MazeApplication *-- MazeWriter : uses
+MazeRenderer <|-- TerminalRenderer

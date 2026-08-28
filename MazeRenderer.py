@@ -42,33 +42,15 @@ class MazeRenderer:
             row_bottom = []
             for cell_number, cell in enumerate(row):
                 nw = self.generator.grid[row_number-1][cell_number-1]
-                # northwest
-                if cell.north or cell.west:
-                    row_top.append(1)
-                else:
-                    if nw and (nw.south or nw.east):
-                        row_top.append(1)
-                    else:
-                        row_top.append(0)
-                # north
-                if cell.north:
-                    row_top.append(1)
-                else:
-                    row_top.append(0)
-                # west
-                if cell.west:
-                    row_bottom.append(1)
-                else:
-                    row_bottom.append(0)
-                # main
-                if str(cell) == "f":
-                    row_bottom.append(1)
-                else:
-                    row_bottom.append(0)
-            row_top.append(1)
-            row_bottom.append(1)
-            map.append(row_top)
-            map.append(row_bottom)
+                # append 1 or 0 depending on the condition
+                row_top.append(int(
+                    cell.north or cell.west or (nw and (nw.south or nw.east))
+                ))
+                row_top.append(int(cell.north))
+                row_bottom.append(int(cell.west))
+                row_bottom.append(int(str(cell) == "f"))
+            map.append(row_top + [1])
+            map.append(row_bottom + [1])
         map.append([1] * (self.generator.width * 2 + 1))
         if self.config.get_show_path():
             map = self.convert_path(
@@ -303,10 +285,9 @@ class BasicRenderer(ThemeRenderer):
 
     def render_wall(self, row: int, cell: int) -> str:
         if self.is_cell_42(row, cell):
-            color42 = "\x1b[38;2;"
-            color42 += self.color42 if self.color42 != "" else "255;255;255"
-            color42 += "m"
-            return color42 + "██" + self.reset
+            return "\x1b[38;2;"+(
+                self.color42 if self.color42 else "255;255;255"
+            ) + "m" + "██" + self.reset
         else:
             return "▒▒"
 
