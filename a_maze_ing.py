@@ -56,7 +56,7 @@ class MazeConfig:
         return self._algorithm
 
     def set_algorithm(self, value: str) -> None:
-        self._algorithm = value
+        self._algorithm = value.lower()
 
     def get_seed(self) -> Optional[int]:
         return self._seed
