@@ -72,7 +72,7 @@ class MazeRenderer:
         map.append([1] * (self.generator.width * 2 + 1))
         if self.config.get_show_path():
             map = self.convert_path(
-                self.generator.find_path(self.config.get_entry()), map
+                self.generator.find_path_bfs(self.config.get_entry()), map
             )
         return map
 

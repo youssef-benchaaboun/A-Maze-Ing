@@ -369,7 +369,49 @@ class MazeGenerator:
                 else:
                     start = self.random.choice(visited)
 
-    def generate(self, algorithm: str) -> None:
+    def count_walls(self,current:tuple[int,int])->int:
+        if current[0] < self.width and current[1]<self.height:
+            x,y=current
+            return [self.grid[y][x].north,self.grid[y][x].south,self.grid[y][x].west,self.grid[y][x].east].count(1)
+        return -1
+    
+    def find_dead_ends(self)->tuple[list,list]:
+
+        pattern_42=[]
+        dead_ends=[]
+        for x in range(self.width):
+            for y in range(self.height):
+                if self.count_walls((x,y))==3:
+                    dead_ends.append((x,y))
+                elif self.count_walls((x,y))==4:
+                    pattern_42.append((x,y))
+        return (dead_ends,pattern_42)
+
+    def is_closed(self,p1:tuple(int,int),p2:tuple[int,int])->bool:
+        x1,y1=p1
+        x2,y2=p2
+        if x1 + 1 == x2 and self.grid[y1][x1].east == 1:
+            return True
+        elif x1 - 1 == x2 and self.grid[y1][x1].west == 1:
+            return True
+        elif y1 + 1 == y2 and self.grid[y1][x1].south == 1:
+            return True
+        elif y1 - 1 == y2 and self.grid[y1][x1].north == 1:
+            return True
+        return False
+    def open_dead_ends(self)->None:
+        dead,pat42=self.find_dead_ends()
+        for x in range(self.width):
+            for y in range(self.height):
+                if(x,y) in dead:
+                    neighbors=self.get_neighbors((x,y))
+                    allowed_neighbors=[(xn,yn) for (xn,yn) in neighbors if (xn,yn) not in pat42 and self.is_closed((x,y),(xn,yn)) ]
+
+                    if allowed_neighbors:
+                        connection=self.random.choice(allowed_neighbors)
+                        self.open_passage((x,y),connection)
+
+    def generate(self, algorithm: str,perfect:bool) -> None:
         if self.width >= 9 and self.height >= 7:
             self.place_42_pattern(self.width//2, self.height//2)
         else:
@@ -380,41 +422,68 @@ class MazeGenerator:
             self.generate_couple()
         else:
             self.generate_dfs()
+        if not perfect:
+            self.open_dead_ends()
 
-    def find_path(
-        self, current: tuple[int, int],
-        path: str = "", visited: Optional[set[tuple[int, int]]] = None
-    ) -> Optional[str]:
-        if visited is None:
-            visited = set()
-        if current == self.exit_point:
-            return path
-        x1, y1 = current
-        visited.add(current)
-        for cell in self.get_neighbors(current):
-            if cell in visited:
-                continue
-            x2, y2 = cell
-            next_path: Optional[str] = None
-            if x1 + 1 == x2 and self.grid[y1][x1].east == 0:
-                next_path = path + "E"
-            elif x1 - 1 == x2 and self.grid[y1][x1].west == 0:
-                next_path = path + "W"
-            elif y1 + 1 == y2 and self.grid[y1][x1].south == 0:
-                next_path = path + "S"
-            elif y1 - 1 == y2 and self.grid[y1][x1].north == 0:
-                next_path = path + "N"
-            if next_path is not None:
-                result = self.find_path(cell, next_path, visited)
-                if result is not None:
-                    return result
-        visited.remove(current)
-        return None
+    def find_path_bfs(self, current: tuple) -> str:
+
+        list_point: list[list[tuple]] = []
+        result = None
+
+        while(True):
+            if result:
+                break
+
+            if len(list_point) == 0:
+                neighbors = self.get_neighbors(current)
+                for next_in in neighbors:
+                    if not self.is_closed(current, next_in):
+                        list_point.append([current, next_in])
+                        if next_in == self.exit_point:
+                            result = list_point[-1]
+                            break
+            else:
+
+
+                list_copy = []
+                for elemnt in list_point:
+                    last = elemnt[-1]     
+                    neighbors = self.get_neighbors(last)
+                    for next_in in neighbors:
+                        if not self.is_closed(next_in,last) and (next_in not in elemnt):
+                            coppy = elemnt.copy()
+                            coppy.append(next_in)
+                            list_copy.append(coppy)
+                            if next_in == self.exit_point:
+                                result = list_copy[-1]
+                                break
+                    if result:
+                        break
+                    list_point = list_copy
+                    
+                
+
+
+        next_path = ""
+        for i in range(len(result) - 1):
+            x1, y1 = result[i]
+            x2, y2 = result[i + 1]
+            
+            if x1 + 1 == x2:
+                next_path += "E"
+            elif x1 - 1 == x2:
+                next_path += "W"
+            elif y1 + 1 == y2:
+                next_path += "S"
+            elif y1 - 1 == y2:
+                next_path += "N"
+
+        return next_path
 
     def save_output(
         self, output_file: str
     ) -> Optional[str]:
-        path = self.find_path(self.entry)
+        path = self.find_path_bfs(self.entry)
         if path is None:
             return "Cannot save maze: no path exists between ENTRY and EXIT"
         lines = ["".join(str(cell) for cell in row) for row in self.grid]
@@ -631,7 +700,7 @@ class MazeApplication:
             self.render_menu(menu_sel, menu)
 
     def run(self) -> int:
-        self.generator.generate(self.config.get_algorithm())
+        self.generator.generate(self.config.get_algorithm(),self.config.get_perfect())
         output = self.generator.print(0)
         if output is None:
             print("Render maze error.", file=sys.stderr)
