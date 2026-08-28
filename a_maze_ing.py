@@ -55,6 +55,9 @@ class MazeConfig:
     def get_algorithm(self) -> str:
         return self._algorithm
 
+    def set_algorithm(self, value: str) -> None:
+        self._algorithm = value
+
     def get_seed(self) -> Optional[int]:
         return self._seed
 
@@ -387,7 +390,7 @@ class MazeGenerator:
                     pattern_42.append((x,y))
         return (dead_ends,pattern_42)
 
-    def is_closed(self,p1:tuple(int,int),p2:tuple[int,int])->bool:
+    def is_closed(self, p1: tuple[int,int], p2: tuple[int,int]) -> bool:
         x1,y1=p1
         x2,y2=p2
         if x1 + 1 == x2 and self.grid[y1][x1].east == 1:
@@ -582,7 +585,8 @@ class MazeApplication:
             ["Hedge", "Pacman", "Basic", "Silicon"],
             ["255;255;255", "255;0;0", "255;128;0", "255;255;0", "128;255;0",
                 "0;255;0", "0;255;128", "0;255;255", "0;128;255", "0;0;255",
-                "128;0;255", "255;0;255", "255;0;128", "Back"]
+                "128;0;255", "255;90;255", "255;0;128", "Back"],
+            ["Walk", "DS", "Couple", "Back"]
         ]
 
     @staticmethod
@@ -657,7 +661,12 @@ class MazeApplication:
                             lines_up = "\x1b[" + str(maze_height*2 + 5) + "A"
                             print(lines_up, end="")
                             self.config.set_seed(random.randint(0, 999))
-                            self.generator.generate(self.config.get_algorithm())
+                            self.generator = MazeGenerator(
+                                self.config.get_width(), self.config.get_height(),
+                                self.config.get_entry(), self.config.get_exit(), self.config.get_seed()
+                            )
+                            self.generator.generate(
+                                self.config.get_algorithm(), self.config.get_perfect())
                             MazeRenderer(self.config, self.generator)
                             self.render_menu(menu_sel, menu)
                         case "Path":
@@ -686,6 +695,19 @@ class MazeApplication:
                         case "Color42":
                             menu = self.menu_options[4]
                             menu_sel = 0
+                        case "Algorithm":
+                            menu = self.menu_options[5]
+                            menu_sel = 0
+                        case "Walk" | "DS" | "Couple":
+                            self.config.set_algorithm(menu[menu_sel])
+                            self.generator = MazeGenerator(
+                                self.config.get_width(), self.config.get_height(),
+                                self.config.get_entry(), self.config.get_exit(), self.config.get_seed()
+                            )
+                            self.generator.generate(
+                                self.config.get_algorithm(), self.config.get_perfect())
+                            MazeRenderer(self.config, self.generator)
+                            self.render_menu(menu_sel, menu)
                         case "Back":
                             menu = self.menu_options[0]
                             menu_sel = 0

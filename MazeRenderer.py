@@ -14,7 +14,7 @@ class MazeRenderer:
         self.print_maze(self.convert_maze())
 
     def convert_path(self, path: str, map: list[list[int]]) -> list[list[int]]:
-        current = self.config.get_entry()
+        current = self.generator.entry
         current = (current[0]*2+1, current[1]*2+1)
         for c in path:
             if c == "N":
@@ -72,14 +72,14 @@ class MazeRenderer:
         map.append([1] * (self.generator.width * 2 + 1))
         if self.config.get_show_path():
             map = self.convert_path(
-                self.generator.find_path_bfs(self.config.get_entry()), map
+                self.generator.find_path_bfs(self.generator.entry), map
             )
         return map
 
     def print_maze(self, map: list[list[int]]) -> None:
         data = (
             map,
-            self.config.get_entry(), self.config.get_exit(),
+            self.generator.entry, self.generator.exit_point,
             self.config.get_color42()
         )
         match self.config.get_theme():
