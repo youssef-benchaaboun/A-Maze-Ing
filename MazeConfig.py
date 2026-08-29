@@ -161,7 +161,7 @@ class ConfigLoader:
         if normalized == "false":
             return False, None
         return None, f"Invalid boolean value: {value}"
-    
+
     @staticmethod
     def _parse_theme(value: str) -> tuple[Optional[str], Optional[str]]:
         normalized = value.capitalize()
@@ -194,7 +194,7 @@ class ConfigLoader:
         if not output_file:
             errors.append("OUTPUT_FILE: Value cannot be empty")
         algorithm = raw.get("ALGORITHM", "dfs").lower()
-        if algorithm not in ("dfs", "walk","couple"):
+        if algorithm not in ("dfs", "walk", "couple"):
             errors.append("ALGORITHM must be dfs or walk or couple")
         seed: Optional[int] = None
         if "SEED" in raw:
