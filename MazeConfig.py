@@ -44,6 +44,10 @@ class MazeConfig:
         """Return the entry coordinates."""
         return self._entry
 
+    def set_entry(self, value: tuple[int, int]) -> None:
+        """Set the entry coordinates."""
+        self._entry = value
+
     def get_exit(self) -> tuple[int, int]:
         """Return the exit coordinates."""
         return self._exit
@@ -55,6 +59,10 @@ class MazeConfig:
     def get_perfect(self) -> bool:
         """Return whether perfect-maze generation is enabled."""
         return self._perfect
+
+    def set_perfect(self, value: bool) -> None:
+        """Set whether perfect-maze generation is enabled."""
+        self._perfect = value
 
     def get_algorithm(self) -> str:
         """Return the selected generation algorithm."""

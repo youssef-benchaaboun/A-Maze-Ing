@@ -18,7 +18,7 @@ class MazeApplication:
         self.menu_options = [
             ["Replay", "Style", "Options", "Exit"],
             ["Theme", "Color42", "Back"],
-            ["Path", "Animate", "Algorithm", "Back"],
+            ["Path", "Algorithm", "Back"],
             ["Hedge", "Pacman", "Basic", "Silicon"],
             [
                 "255;255;255", "255;0;0", "255;128;0",
@@ -27,7 +27,7 @@ class MazeApplication:
                 "0;0;255", "128;0;255", "255;90;255",
                 "255;0;128", "Back",
             ],
-            ["Walk", "DS", "Couple", "Back"],
+            ["Perfect", "Walk", "DFS", "Couple", "Back"],
         ]
 
     def _create_generator(self) -> MazeGenerator:
@@ -72,7 +72,7 @@ class MazeApplication:
         options: list[str] = []
 
         path_box = "✔" if self.config.get_show_path() else " "
-        animate_box = "✔" if self.config.get_animate() else " "
+        perfect_box = "✔" if self.config.get_perfect() else " "
 
         colors = {
             "oc": "\x1b[48;2;0;0;90m",
@@ -84,8 +84,8 @@ class MazeApplication:
         for i, option in enumerate(menu):
             if option == "Path":
                 option = f"{path_box}{option}"
-            elif option == "Animate":
-                option = f"{animate_box}{option}"
+            elif option == "Perfect":
+                option = f"{perfect_box}{option}"
 
             if menu[0] == "255;255;255" and option != "Back":
                 color = "\x1b[48;2;" + option + "m"
@@ -128,6 +128,27 @@ class MazeApplication:
             elif key == "\x1b[C":
                 menu_sel = (menu_sel + 1) % len(menu)
 
+            elif key in ["a", "w", "s", "d"]:
+                entry = self.config.get_entry()
+                current = self.generator.grid[entry[1]][entry[0]]
+                
+                if key == "w" and current.north == 0:
+                    entry = (entry[0], entry[1] - 1)
+                elif key == "s" and current.south == 0:
+                    entry = (entry[0], entry[1] + 1)
+                elif key == "d" and current.east == 0:
+                    entry = (entry[0] + 1, entry[1])
+                elif key == "a" and current.west == 0:
+                    entry = (entry[0] - 1, entry[1])
+
+                self.config.set_entry(entry)
+
+                self.generator = self._create_generator()
+                self.generator.generate()
+
+                MazeRenderer(self.config, self.generator)
+                self.render_menu(menu_sel, menu)
+
             elif key in ("\n", "\r"):
                 if (
                     menu[0] == "255;255;255"
@@ -160,10 +181,7 @@ class MazeApplication:
                             self.generator = self._create_generator()
                             self.generator.generate()
 
-                            MazeRenderer(
-                                self.config,
-                                self.generator,
-                            )
+                            MazeRenderer(self.config, self.generator)
                             self.render_menu(menu_sel, menu)
 
                         case "Path":
@@ -171,10 +189,7 @@ class MazeApplication:
                                 not self.config.get_show_path()
                             )
 
-                            MazeRenderer(
-                                self.config,
-                                self.generator,
-                            )
+                            MazeRenderer(self.config, self.generator)
                             self.render_menu(menu_sel, menu)
 
                         case "Animate":
@@ -199,10 +214,7 @@ class MazeApplication:
                             menu = self.menu_options[1]
                             menu_sel = 0
 
-                            MazeRenderer(
-                                self.config,
-                                self.generator,
-                            )
+                            MazeRenderer(self.config, self.generator)
                             self.render_menu(menu_sel, menu)
 
                         case "Color42":
@@ -213,23 +225,24 @@ class MazeApplication:
                             menu = self.menu_options[5]
                             menu_sel = 0
 
-                        case "Walk" | "DS" | "Couple":
-                            if option == "Walk":
-                                algorithm = "walk"
-                            elif option == "Couple":
-                                algorithm = "couple"
-                            else:
-                                algorithm = "dfs"
-
-                            self.config.set_algorithm(algorithm)
+                        case "Perfect":
+                            self.config.set_perfect(
+                                not self.config.get_perfect()
+                            )
 
                             self.generator = self._create_generator()
                             self.generator.generate()
 
-                            MazeRenderer(
-                                self.config,
-                                self.generator,
-                            )
+                            MazeRenderer(self.config, self.generator)
+                            self.render_menu(menu_sel, menu)
+
+                        case "Walk" | "DFS" | "Couple":
+                            self.config.set_algorithm(option)
+
+                            self.generator = self._create_generator()
+                            self.generator.generate()
+
+                            MazeRenderer(self.config, self.generator)
                             self.render_menu(menu_sel, menu)
 
                         case "Back":
