@@ -1,8 +1,9 @@
 
-from typing import Optional
+from typing import Optional, cast
 
 
 class MazeConfig:
+    """Store validated maze and display configuration values."""
     def __init__(
         self,
         width: int,
@@ -17,6 +18,7 @@ class MazeConfig:
         show_path: Optional[bool],
         theme: Optional[str],
     ) -> None:
+        """Initialize all maze configuration values."""
         self._width = width
         self._height = height
         self._entry = entry
@@ -31,61 +33,80 @@ class MazeConfig:
         self._color42 = ""
 
     def get_width(self) -> int:
+        """Return the maze width."""
         return self._width
 
     def get_height(self) -> int:
+        """Return the maze height."""
         return self._height
 
     def get_entry(self) -> tuple[int, int]:
+        """Return the entry coordinates."""
         return self._entry
 
     def get_exit(self) -> tuple[int, int]:
+        """Return the exit coordinates."""
         return self._exit
 
     def get_output_file(self) -> str:
+        """Return the output filename."""
         return self._output_file
 
     def get_perfect(self) -> bool:
+        """Return whether perfect-maze generation is enabled."""
         return self._perfect
 
     def get_algorithm(self) -> str:
+        """Return the selected generation algorithm."""
         return self._algorithm
 
     def set_algorithm(self, value: str) -> None:
+        """Set the generation algorithm using a normalized name."""
         self._algorithm = value.lower()
 
     def get_seed(self) -> Optional[int]:
+        """Return the optional random seed."""
         return self._seed
 
     def set_seed(self, value: int) -> None:
+        """Set the random seed."""
         self._seed = value
 
     def get_animate(self) -> Optional[bool]:
+        """Return the optional animation setting."""
         return self._animate
 
     def set_animate(self, value: bool) -> None:
+        """Enable or disable animation."""
         self._animate = value
 
     def get_show_path(self) -> Optional[bool]:
+        """Return the optional path-visibility setting."""
         return self._show_path
 
     def set_show_path(self, value: bool) -> None:
+        """Show or hide the solution path."""
         self._show_path = value
 
     def get_theme(self) -> Optional[str]:
+        """Return the optional renderer theme."""
         return self._theme
 
     def set_theme(self, value: str) -> None:
+        """Set the renderer theme."""
         self._theme = value
 
-    def get_color42(self) -> Optional[str]:
+    def get_color42(self) -> str:
+        """Return the custom color used for the 42 pattern."""
         return self._color42
 
     def set_color42(self, value: str) -> None:
+        """Set the custom color used for the 42 pattern."""
         self._color42 = value
 
 
 class ConfigLoader:
+    """Load and validate maze configuration files."""
 
     REQUIRED_KEYS = (
         "WIDTH", "HEIGHT", "ENTRY", "EXIT", "OUTPUT_FILE", "PERFECT"
@@ -97,6 +118,7 @@ class ConfigLoader:
     def _load_lines(
         file_path: str,
     ) -> tuple[Optional[list[str]], Optional[str]]:
+        """Read configuration lines or return a descriptive error."""
         try:
             with open(file_path, encoding="utf-8") as config_file:
                 return config_file.read().splitlines(), None
@@ -107,6 +129,7 @@ class ConfigLoader:
     def _split_lines(
         cls, lines: list[str]
     ) -> tuple[Optional[dict[str, str]], Optional[str]]:
+        """Split configuration lines into validated key-value pairs."""
         config: dict[str, str] = {}
         errors: list[str] = []
         for line in lines:
@@ -132,6 +155,7 @@ class ConfigLoader:
     def _parse_positive_integer(
         value: str,
     ) -> tuple[Optional[int], Optional[str]]:
+        """Parse a strictly positive integer."""
         try:
             result = int(value)
         except ValueError:
@@ -144,6 +168,7 @@ class ConfigLoader:
     def _parse_point(
         value: str,
     ) -> tuple[Optional[tuple[int, int]], Optional[str]]:
+        """Parse a non-negative coordinate pair."""
         try:
             x_value, y_value = value.split(",", 1)
             point = (int(x_value.strip()), int(y_value.strip()))
@@ -155,6 +180,7 @@ class ConfigLoader:
 
     @staticmethod
     def _parse_bool(value: str) -> tuple[Optional[bool], Optional[str]]:
+        """Parse a case-insensitive boolean value."""
         normalized = value.lower()
         if normalized == "true":
             return True, None
@@ -164,6 +190,7 @@ class ConfigLoader:
 
     @staticmethod
     def _parse_theme(value: str) -> tuple[Optional[str], Optional[str]]:
+        """Parse and validate a renderer theme name."""
         normalized = value.capitalize()
         if normalized in ["Hedge", "Pacman", "Basic", "Silicon"]:
             return normalized, None
@@ -173,6 +200,7 @@ class ConfigLoader:
     def load_config(
         cls, file_path: str
     ) -> tuple[Optional[MazeConfig], Optional[str]]:
+        """Load a configuration file into a validated configuration object."""
         lines, error = cls._load_lines(file_path)
         if error or lines is None:
             return None, error
@@ -190,6 +218,11 @@ class ConfigLoader:
                 perfect_error
             ) if item
         ]
+        parsed_width = cast(int, width)
+        parsed_height = cast(int, height)
+        parsed_entry = cast(tuple[int, int], entry)
+        parsed_exit = cast(tuple[int, int], exit_point)
+        parsed_perfect = cast(bool, perfect)
         output_file = raw["OUTPUT_FILE"].strip()
         if not output_file:
             errors.append("OUTPUT_FILE: Value cannot be empty")
@@ -221,19 +254,24 @@ class ConfigLoader:
             except ValueError:
                 errors.append(f"THEME: Invalid value: {raw['THEME']}")
 
-        for name, point in (("ENTRY", entry), ("EXIT", exit_point)):
-            if point[0] >= width or point[1] >= height:
+        for name, point in (
+            ("ENTRY", parsed_entry),
+            ("EXIT", parsed_exit),
+        ):
+            if point[0] >= parsed_width or point[1] >= parsed_height:
                 errors.append(
                     f"{name} {point} is outside maze boundaries "
-                    + f"({width}x{height})"
+                    + f"({parsed_width}x{parsed_height})"
                 )
-        if entry == exit_point:
+        if parsed_entry == parsed_exit:
             errors.append(
-                f"ENTRY {entry} cannot be the same as EXIT {exit_point}"
+                f"ENTRY {parsed_entry} cannot be the same as "
+                f"EXIT {parsed_exit}"
             )
         if errors:
             return None, "\n".join(errors)
         return MazeConfig(
-            width, height, entry, exit_point, output_file, perfect,
+            parsed_width, parsed_height, parsed_entry, parsed_exit,
+            output_file, parsed_perfect,
             algorithm, seed, animate, show_path, theme
         ), None

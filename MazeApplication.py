@@ -9,8 +9,10 @@ from MazeRenderer import MazeRenderer
 
 
 class MazeApplication:
+    """Coordinate maze generation, rendering, and terminal interaction."""
 
     def __init__(self, config: MazeConfig) -> None:
+        """Initialize the application from a validated configuration."""
         self.config = config
         self.generator = self._create_generator()
         self.menu_options = [
@@ -29,6 +31,7 @@ class MazeApplication:
         ]
 
     def _create_generator(self) -> MazeGenerator:
+        """Create a generator that reflects the current configuration."""
         return MazeGenerator(
             self.config.get_width(),
             self.config.get_height(),
@@ -41,6 +44,7 @@ class MazeApplication:
 
     @staticmethod
     def get_key() -> str:
+        """Read one keypress from the terminal, including arrow sequences."""
         fd = sys.stdin.fileno()
         old_settings = termios.tcgetattr(fd)
 
@@ -64,6 +68,7 @@ class MazeApplication:
         selected: int,
         menu: list[str],
     ) -> None:
+        """Render a horizontal menu and highlight its selected option."""
         options: list[str] = []
 
         path_box = "✔" if self.config.get_show_path() else " "
@@ -107,6 +112,7 @@ class MazeApplication:
         print("\n" + colors["0"])
 
     def print_control(self, maze_height: int) -> None:
+        """Display the maze and process interactive menu controls."""
         menu_sel = 0
         menu = self.menu_options[0]
 
@@ -241,6 +247,7 @@ class MazeApplication:
             self.render_menu(menu_sel, menu)
 
     def run(self) -> int:
+        """Generate, display, and save a maze, returning a status code."""
         self.generator.generate()
         self.print_control(self.config.get_height())
 

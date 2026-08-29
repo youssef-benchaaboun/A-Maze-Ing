@@ -14,12 +14,14 @@ RendererData = tuple[
 
 
 class MazeRenderer:
+    """Convert generated cells to display tiles and select a theme."""
 
     def __init__(
         self,
         config: MazeConfig,
         generator: MazeGenerator,
     ) -> None:
+        """Initialize the renderer and immediately print the maze."""
         self.config = config
         self.generator = generator
         self.print_maze(self.convert_maze())
@@ -29,6 +31,7 @@ class MazeRenderer:
         path: str,
         maze_map: list[list[int]],
     ) -> list[list[int]]:
+        """Mark the solution path on a display-ready maze map."""
         current = self.config.get_entry()
         current = (current[0] * 2 + 1, current[1] * 2 + 1)
 
@@ -56,6 +59,7 @@ class MazeRenderer:
         return maze_map
 
     def convert_maze(self) -> list[list[int]]:
+        """Convert the cell grid into a wall-and-floor tile map."""
         maze_map: list[list[int]] = []
         grid = self.generator.get_grid()
 
@@ -92,6 +96,7 @@ class MazeRenderer:
         return maze_map
 
     def print_maze(self, maze_map: list[list[int]]) -> None:
+        """Print a tile map with the configured visual theme."""
         data: RendererData = (
             maze_map,
             self.config.get_entry(),
@@ -99,6 +104,7 @@ class MazeRenderer:
             self.config.get_color42(),
         )
 
+        maze: ThemeRenderer
         match self.config.get_theme():
             case "Basic":
                 maze = BasicRenderer(data)
@@ -113,8 +119,10 @@ class MazeRenderer:
 
 
 class ThemeRenderer(ABC):
+    """Define shared behavior for terminal maze themes."""
 
     def __init__(self, data: RendererData) -> None:
+        """Initialize shared map, coordinate, and color data."""
         self.row_prefix: str = ""
         self.map = data[0]
         self.entry = data[1]
@@ -130,13 +138,16 @@ class ThemeRenderer(ABC):
 
     @abstractmethod
     def render_wall(self, row: int, cell: int) -> str:
+        """Render one wall tile."""
         pass
 
     @abstractmethod
     def render_floor(self, row: int, cell: int) -> str:
+        """Render one floor tile."""
         pass
 
     def is_cell_42(self, row: int, cell: int) -> bool:
+        """Return whether a tile belongs to a fully enclosed pattern cell."""
         return bool(
             cell % 2
             and row % 2
@@ -151,6 +162,7 @@ class ThemeRenderer(ABC):
         )
 
     def render_row(self, row: int) -> str:
+        """Render one complete tile-map row."""
         output = self.row_prefix
 
         for cell, cell_content in enumerate(self.map[row]):
@@ -162,6 +174,7 @@ class ThemeRenderer(ABC):
         return output
 
     def print(self) -> None:
+        """Clear the terminal and print all rendered rows."""
         print("\033[H\033[J", end="")
 
         for row_number, _ in enumerate(self.map):
@@ -171,6 +184,7 @@ class ThemeRenderer(ABC):
 
 
 class HedgeRenderer(ThemeRenderer):
+    """Render the maze with hedge walls and earth-colored paths."""
 
     color_pallete = {
         "gr": "\x1b[48;2;0;195;0m",
@@ -181,6 +195,7 @@ class HedgeRenderer(ThemeRenderer):
     }
 
     def render_wall(self, row: int, cell: int) -> str:
+        """Render one hedge wall tile."""
         maze_map = self.map
         colors = self.color_pallete
         row_length = len(maze_map[row])
@@ -214,6 +229,7 @@ class HedgeRenderer(ThemeRenderer):
         return wall
 
     def render_floor(self, row: int, cell: int) -> str:
+        """Render one hedge-theme floor tile."""
         colors = self.color_pallete
 
         if self.entry == ((cell - 1) / 2, (row - 1) / 2):
@@ -231,8 +247,10 @@ class HedgeRenderer(ThemeRenderer):
 
 
 class PacmanRenderer(ThemeRenderer):
+    """Render the maze with a Pac-Man-inspired terminal theme."""
 
     def __init__(self, data: RendererData) -> None:
+        """Initialize the Pac-Man color palette."""
         super().__init__(data)
         self.row_prefix = (
             "\x1b[48;2;0;0;0m"
@@ -240,6 +258,7 @@ class PacmanRenderer(ThemeRenderer):
         )
 
     def c(self, y: int, x: int) -> bool:
+        """Return whether an in-bounds tile is a wall."""
         if (
             y < 0
             or y >= len(self.map)
@@ -251,6 +270,7 @@ class PacmanRenderer(ThemeRenderer):
         return self.map[y][x] == 1
 
     def render_wall(self, row: int, cell: int) -> str:
+        """Render one connected Pac-Man wall tile."""
         if self.c(row - 1, cell) and self.c(row + 1, cell):
             if self.c(row, cell + 1):
                 if self.c(row, cell - 1):
@@ -304,6 +324,7 @@ class PacmanRenderer(ThemeRenderer):
         return wall
 
     def render_floor(self, row: int, cell: int) -> str:
+        """Render one Pac-Man floor tile."""
         if self.entry == ((cell - 1) / 2, (row - 1) / 2):
             return "🟡"
 
@@ -317,8 +338,10 @@ class PacmanRenderer(ThemeRenderer):
 
 
 class SiliconRenderer(ThemeRenderer):
+    """Render the maze with a green silicon-style theme."""
 
     def __init__(self, data: RendererData) -> None:
+        """Initialize the silicon color palette."""
         super().__init__(data)
         self.row_prefix = (
             "\x1b[48;2;0;120;0m"
@@ -326,6 +349,7 @@ class SiliconRenderer(ThemeRenderer):
         )
 
     def c(self, y: int, x: int) -> bool:
+        """Return whether an in-bounds tile is a wall."""
         if (
             y < 0
             or y >= len(self.map)
@@ -337,6 +361,7 @@ class SiliconRenderer(ThemeRenderer):
         return self.map[y][x] == 1
 
     def render_wall(self, row: int, cell: int) -> str:
+        """Render one silicon wall tile."""
         if self.color42 and self.is_cell_42(row, cell):
             return (
                 f"\x1b[38;2;{self.color42}m"
@@ -359,6 +384,7 @@ class SiliconRenderer(ThemeRenderer):
         return "▒▒"
 
     def render_floor(self, row: int, cell: int) -> str:
+        """Render one silicon floor tile."""
         if self.entry == ((cell - 1) / 2, (row - 1) / 2):
             return "✨"
 
@@ -372,6 +398,7 @@ class SiliconRenderer(ThemeRenderer):
 
 
 class BasicRenderer(ThemeRenderer):
+    """Render the maze with a minimal monochrome theme."""
 
     color_pallete = {
         "whF": "\x1b[38;2;255;255;255m",
@@ -379,6 +406,7 @@ class BasicRenderer(ThemeRenderer):
     }
 
     def render_wall(self, row: int, cell: int) -> str:
+        """Render one basic wall tile."""
         if self.is_cell_42(row, cell):
             color = (
                 self.color42
@@ -396,6 +424,7 @@ class BasicRenderer(ThemeRenderer):
         return "▒▒"
 
     def render_floor(self, row: int, cell: int) -> str:
+        """Render one basic floor tile."""
         if self.entry == ((cell - 1) / 2, (row - 1) / 2):
             return (
                 self.color_pallete["rdF"]

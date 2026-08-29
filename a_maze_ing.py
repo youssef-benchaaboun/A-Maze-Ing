@@ -4,6 +4,7 @@ from MazeApplication import MazeApplication
 
 
 def main(arguments: list[str]) -> int:
+    """Run the maze application using a configuration-file argument."""
     if len(arguments) != 2:
         print(f"Usage: {arguments[0]} config.txt", file=sys.stderr)
         return 1

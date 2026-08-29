@@ -3,8 +3,10 @@ from typing import Optional
 
 
 class MazeCell:
+    """Represent one maze cell and its four walls."""
 
     def __init__(self) -> None:
+        """Initialize a closed, unvisited cell."""
         self.north: int = 1
         self.east: int = 1
         self.south: int = 1
@@ -12,6 +14,7 @@ class MazeCell:
         self.visited: bool = False
 
     def __str__(self) -> str:
+        """Return the cell's hexadecimal wall encoding."""
         value = (
             self.north | (self.east << 1) | (self.south << 2)
             | (self.west << 3)
@@ -20,6 +23,7 @@ class MazeCell:
 
 
 class MazeGenerator:
+    """Generate, solve, inspect, and export configurable mazes."""
 
     def __init__(
         self,
@@ -31,6 +35,7 @@ class MazeGenerator:
         algorithm: str = "dfs",
         perfect: bool = True,
     ) -> None:
+        """Initialize a reusable maze generator."""
         self.width: int = width
         self.height: int = height
         self.entry: tuple[int, int] = entry
@@ -42,6 +47,7 @@ class MazeGenerator:
         self._initialize_grid()
 
     def _initialize_grid(self) -> None:
+        """Reset the grid to closed, unvisited cells."""
         self.grid = [
             [MazeCell() for _ in range(self.width)]
             for _ in range(self.height)
@@ -52,6 +58,7 @@ class MazeGenerator:
         current: tuple[int, int],
         allowed: Optional[list[tuple[int, int]]] = None,
     ) -> list[tuple[int, int]]:
+        """Return in-bounds neighbors, optionally limited to allowed cells."""
         x, y = current
         neighbors: list[tuple[int, int]] = []
         candidates = ((x, y + 1), (x, y - 1), (x + 1, y), (x - 1, y))
@@ -69,6 +76,7 @@ class MazeGenerator:
         first: tuple[int, int],
         second: tuple[int, int],
     ) -> None:
+        """Open the shared wall between two adjacent cells."""
         x1, y1 = first
         x2, y2 = second
 
@@ -86,6 +94,7 @@ class MazeGenerator:
             self.grid[y2][x2].south = 0
 
     def _place_42_pattern(self, x: int, y: int) -> None:
+        """Reserve fully closed cells forming the centered 42 pattern."""
         pattern = [
             (-2, -3), (-1, -3), (0, -3), (0, -2), (0, -1), (1, -1),
             (2, -1), (-2, 1), (-2, 2), (-2, 3), (-1, 3), (0, 3),
@@ -96,6 +105,7 @@ class MazeGenerator:
             self.grid[y + row][x + column].visited = True
 
     def _generate_dfs(self, current: tuple[int, int] = (0, 0)) -> None:
+        """Carve passages using recursive depth-first search."""
         x, y = current
         self.grid[y][x].visited = True
         neighbors = self._get_neighbors(current)
@@ -108,6 +118,7 @@ class MazeGenerator:
                 self._generate_dfs(next_cell)
 
     def _generate_couple(self) -> None:
+        """Carve passages using randomized neighboring cell pairs."""
         start: tuple[int, int] = (0, 0)
         self.grid[0][0].visited = True
         couple_list: list[tuple[tuple[int, int], tuple[int, int]]] = []
@@ -134,6 +145,7 @@ class MazeGenerator:
                 self.random.shuffle(couple_list)
 
     def _generate_walk(self) -> None:
+        """Carve passages by connecting random visited and unvisited cells."""
         allowed = [
             (x, y) for x in range(self.width) for y in range(self.height)
             if not self.grid[y][x].visited
@@ -162,6 +174,7 @@ class MazeGenerator:
                     start = self.random.choice(visited)
 
     def _count_walls(self, current: tuple[int, int]) -> int:
+        """Count closed walls for a cell, or return -1 outside the grid."""
         x, y = current
 
         if not (0 <= x < self.width and 0 <= y < self.height):
@@ -179,6 +192,7 @@ class MazeGenerator:
     def _find_dead_ends(
         self,
     ) -> tuple[list[tuple[int, int]], list[tuple[int, int]]]:
+        """Return dead-end cells and fully closed pattern cells."""
         pattern_42: list[tuple[int, int]] = []
         dead_ends: list[tuple[int, int]] = []
 
@@ -194,6 +208,7 @@ class MazeGenerator:
         return dead_ends, pattern_42
 
     def _is_closed(self, p1: tuple[int, int], p2: tuple[int, int]) -> bool:
+        """Return whether the passage from one adjacent cell is closed."""
         x1, y1 = p1
         x2, y2 = p2
 
@@ -209,6 +224,7 @@ class MazeGenerator:
         return False
 
     def _open_dead_ends(self) -> None:
+        """Open eligible dead ends when generating a non-perfect maze."""
         dead_ends, pattern_42 = self._find_dead_ends()
 
         for x, y in dead_ends:
@@ -224,6 +240,7 @@ class MazeGenerator:
                 self._open_passage((x, y), connection)
 
     def generate(self) -> None:
+        """Generate a fresh maze with the configured algorithm and mode."""
         self._initialize_grid()
 
         if self.width >= 9 and self.height >= 7:
@@ -242,9 +259,11 @@ class MazeGenerator:
             self._open_dead_ends()
 
     def get_grid(self) -> list[list[MazeCell]]:
+        """Return a shallow row copy of the generated cell grid."""
         return [row.copy() for row in self.grid]
 
     def get_solution(self) -> Optional[str]:
+        """Return a shortest entry-to-exit path as cardinal directions."""
         if self.entry == self.exit_point:
             return ""
 
@@ -277,6 +296,7 @@ class MazeGenerator:
 
     @staticmethod
     def _path_to_string(path: list[tuple[int, int]]) -> str:
+        """Convert a coordinate path to cardinal direction letters."""
         result = ""
 
         for index in range(len(path) - 1):
@@ -295,6 +315,7 @@ class MazeGenerator:
         return result
 
     def save_output(self, output_file: str = "maz.txt") -> Optional[str]:
+        """Save the encoded maze and solution, returning any write error."""
         path = self.get_solution()
 
         if path is None:
