@@ -142,9 +142,8 @@ class MazeApplication:
                     entry = (entry[0] - 1, entry[1])
 
                 self.config.set_entry(entry)
+                self.generator.entry=entry
 
-                self.generator = self._create_generator()
-                self.generator.generate()
 
                 MazeRenderer(self.config, self.generator)
                 self.render_menu(menu_sel, menu)

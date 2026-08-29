@@ -129,7 +129,7 @@ class MazeGenerator:
         self.random.shuffle(couple_list)
 
         while couple_list:
-            p1, p2 = couple_list[0]
+            p1, p2 = couple_list[-1]
             couple_list.remove((p1, p2))
             x, y = p2
 
@@ -137,12 +137,13 @@ class MazeGenerator:
                 self.grid[y][x].visited = True
                 self._open_passage(p1, p2)
 
+                list_copy:list[tuple]=[]
                 for neighbor in self._get_neighbors(p2):
                     xn, yn = neighbor
                     if not self.grid[yn][xn].visited:
-                        couple_list.append((p2, neighbor))
-
-                self.random.shuffle(couple_list)
+                        list_copy.append((p2, neighbor))
+                        self.random.shuffle(list_copy)
+                couple_list.extend(list_copy)
 
     def _generate_walk(self) -> None:
         """Carve passages by connecting random visited and unvisited cells."""
