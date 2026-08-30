@@ -117,6 +117,9 @@ class MazeRenderer:
 
         maze.print()
 
+        if self.config.get_width() < 9 and self.config.get_height() < 7:
+            print("Small maze was generated without the 42 pattern.")
+
 
 class ThemeRenderer(ABC):
     """Define shared behavior for terminal maze themes."""
@@ -224,7 +227,23 @@ class HedgeRenderer(ThemeRenderer):
             wall += " "
 
         if self.is_cell_42(row, cell):
-            wall = colors["42"] + "  "
+
+            if self.color42 == "255;0;0":
+                wall = "🌹"
+            elif self.color42 == "255;128;0":
+                wall = "🏵️ "
+            elif self.color42 == "255;255;0":
+                wall = "🌼"
+            elif self.color42 == "0;255;255":
+                wall = "💠"
+            elif self.color42 == "128;0;255":
+                wall = "🪻 "
+            elif self.color42 == "255;90;255":
+                wall = "🌸"
+            elif self.color42 == "255;0;128":
+                wall = "🌺"
+            else:
+                wall = colors["42"] + "  "
 
         return wall
 

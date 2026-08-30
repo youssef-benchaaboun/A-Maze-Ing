@@ -246,8 +246,6 @@ class MazeGenerator:
 
         if self.width >= 9 and self.height >= 7:
             self._place_42_pattern(self.width // 2, self.height // 2)
-        else:
-            print("Map was generated without the 42 pattern.")
 
         if self.algorithm == "walk":
             self._generate_walk()
