@@ -117,8 +117,8 @@ class MazeRenderer:
 
         maze.print()
 
-        if self.config.get_width() < 9 and self.config.get_height() < 7:
-            print("Small maze was generated without the 42 pattern.")
+        if self.config.get_width() < 9 or self.config.get_height() < 7:
+            print("Small maze, generated without the 42 pattern.")
 
 
 class ThemeRenderer(ABC):
