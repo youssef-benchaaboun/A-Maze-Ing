@@ -1,5 +1,4 @@
 import random
-import sys
 from typing import Optional
 
 
@@ -103,12 +102,6 @@ class MazeGenerator:
         ]
 
         for row, column in pattern:
-            if (x + column, y + row) in [self.entry, self.exit_point]:
-                print(
-                    "Cannot create maze: ENTRY and EXIT should be reachable",
-                    file=sys.stderr
-                )
-                sys.exit(1)
             self.grid[y + row][x + column].visited = True
 
     def _generate_dfs(self, current: tuple[int, int] = (0, 0)) -> None:
