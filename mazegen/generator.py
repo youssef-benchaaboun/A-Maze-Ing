@@ -137,7 +137,7 @@ class MazeGenerator:
                 self.grid[y][x].visited = True
                 self._open_passage(p1, p2)
 
-                list_copy:list[tuple]=[]
+                list_copy: list[tuple] = []
                 for neighbor in self._get_neighbors(p2):
                     xn, yn = neighbor
                     if not self.grid[yn][xn].visited:
@@ -315,6 +315,9 @@ class MazeGenerator:
 
     def save_output(self, output_file: str = "maz.txt") -> Optional[str]:
         """Save the encoded maze and solution, returning any write error."""
+        if self.entry == self.exit_point:
+            return "Cannot save maze: same ENTRY and EXIT"
+
         path = self.get_solution()
 
         if path is None:
