@@ -2,7 +2,6 @@ import random
 import sys
 import termios
 import tty
-from typing import Callable, Optional
 from MazeConfig import MazeConfig
 from mazegen import MazeGenerator
 from MazeRenderer import MazeRenderer
@@ -32,6 +31,7 @@ class MazeApplication:
 
     def _create_generator(self) -> MazeGenerator:
         """Create a generator that reflects the current configuration."""
+
         return MazeGenerator(
             self.config.get_width(),
             self.config.get_height(),
@@ -40,7 +40,7 @@ class MazeApplication:
             self.config.get_seed(),
             self.config.get_algorithm(),
             self.config.get_perfect(),
-            self.get_animate_funct(),
+            self.render_maze if self.config.get_animate() else None,
         )
 
     @staticmethod
@@ -63,9 +63,6 @@ class MazeApplication:
             )
 
         return ch
-
-    def get_animate_funct(self) -> Optional[Callable[[MazeGenerator], None]]:
-        return self.render_maze if self.config.get_animate() else None
 
     def render_maze(self, maze: MazeGenerator) -> None:
         MazeRenderer(self.config, maze)
@@ -141,18 +138,18 @@ class MazeApplication:
             elif key == "\x1b\x1b\x1b":
                 return
 
-            elif key in ["a", "w", "s", "d"]:
+            elif key in ["w", "a", "s", "d"]:
                 entry = self.config.get_entry()
                 current = self.generator.grid[entry[1]][entry[0]]
 
                 if key == "w" and current.north == 0:
                     entry = (entry[0], entry[1] - 1)
+                elif key == "a" and current.west == 0:
+                    entry = (entry[0] - 1, entry[1])
                 elif key == "s" and current.south == 0:
                     entry = (entry[0], entry[1] + 1)
                 elif key == "d" and current.east == 0:
                     entry = (entry[0] + 1, entry[1])
-                elif key == "a" and current.west == 0:
-                    entry = (entry[0] - 1, entry[1])
 
                 self.config.set_entry(entry)
                 self.generator.entry = entry
