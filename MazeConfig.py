@@ -1,9 +1,9 @@
-
 from typing import Optional, cast
 
 
 class MazeConfig:
     """Store validated maze and display configuration values."""
+
     def __init__(
         self,
         width: int,
@@ -14,7 +14,6 @@ class MazeConfig:
         perfect: bool,
         algorithm: str,
         seed: Optional[int],
-        animate: Optional[bool],
         show_path: Optional[bool],
         theme: Optional[str],
     ) -> None:
@@ -27,7 +26,6 @@ class MazeConfig:
         self._perfect = perfect
         self._algorithm = algorithm
         self._seed = seed
-        self._animate = animate
         self._show_path = show_path
         self._theme = theme
         self._color42 = ""
@@ -80,14 +78,6 @@ class MazeConfig:
         """Set the random seed."""
         self._seed = value
 
-    def get_animate(self) -> Optional[bool]:
-        """Return the optional animation setting."""
-        return self._animate
-
-    def set_animate(self, value: bool) -> None:
-        """Enable or disable animation."""
-        self._animate = value
-
     def get_show_path(self) -> Optional[bool]:
         """Return the optional path-visibility setting."""
         return self._show_path
@@ -117,9 +107,21 @@ class ConfigLoader:
     """Load and validate maze configuration files."""
 
     REQUIRED_KEYS = (
-        "WIDTH", "HEIGHT", "ENTRY", "EXIT", "OUTPUT_FILE", "PERFECT"
+        "WIDTH",
+        "HEIGHT",
+        "ENTRY",
+        "EXIT",
+        "OUTPUT_FILE",
+        "PERFECT",
     )
-    OPTIONAL_KEYS = ("ALGORITHM", "SEED", "ANIMATE", "SHOW_PATH", "THEME")
+
+    OPTIONAL_KEYS = (
+        "ALGORITHM",
+        "SEED",
+        "SHOW_PATH",
+        "THEME",
+    )
+
     VALID_KEYS = REQUIRED_KEYS + OPTIONAL_KEYS
 
     @staticmethod
@@ -135,28 +137,43 @@ class ConfigLoader:
 
     @classmethod
     def _split_lines(
-        cls, lines: list[str]
+        cls,
+        lines: list[str],
     ) -> tuple[Optional[dict[str, str]], Optional[str]]:
         """Split configuration lines into validated key-value pairs."""
         config: dict[str, str] = {}
         errors: list[str] = []
+
         for line in lines:
             line = line.strip()
+
             if not line or line.startswith("#"):
                 continue
+
             if "=" not in line:
                 errors.append(f"Bad KEY=VALUE syntax: {line}")
                 continue
-            key, value = (part.strip() for part in line.split("=", 1))
+
+            key, value = (
+                part.strip()
+                for part in line.split("=", 1)
+            )
+
             if key not in cls.VALID_KEYS:
-                errors.append(f"{key} is not a valid configuration")
+                errors.append(
+                    f"{key} is not a valid configuration"
+                )
             elif key in config:
                 errors.append(f"{key} is repeated")
             else:
                 config[key] = value
+
         for key in cls.REQUIRED_KEYS:
             if key not in config:
-                errors.append(f"Missing required configuration: {key}")
+                errors.append(
+                    f"Missing required configuration: {key}"
+                )
+
         return (None, "\n".join(errors)) if errors else (config, None)
 
     @staticmethod
@@ -168,8 +185,10 @@ class ConfigLoader:
             result = int(value)
         except ValueError:
             return None, f"Invalid integer value: {value}"
+
         if result < 1:
             return None, f"{result} must be greater than 0"
+
         return result, None
 
     @staticmethod
@@ -179,107 +198,191 @@ class ConfigLoader:
         """Parse a non-negative coordinate pair."""
         try:
             x_value, y_value = value.split(",", 1)
-            point = (int(x_value.strip()), int(y_value.strip()))
+
+            point = (
+                int(x_value.strip()),
+                int(y_value.strip()),
+            )
         except ValueError:
             return None, f"Invalid point format: {value}"
+
         if point[0] < 0 or point[1] < 0:
-            return None, f"Point {point} cannot contain negative coordinates"
+            return (
+                None,
+                f"Point {point} cannot contain negative coordinates",
+            )
+
         return point, None
 
     @staticmethod
-    def _parse_bool(value: str) -> tuple[Optional[bool], Optional[str]]:
+    def _parse_bool(
+        value: str,
+    ) -> tuple[Optional[bool], Optional[str]]:
         """Parse a case-insensitive boolean value."""
         normalized = value.lower()
+
         if normalized == "true":
             return True, None
+
         if normalized == "false":
             return False, None
+
         return None, f"Invalid boolean value: {value}"
 
     @staticmethod
-    def _parse_theme(value: str) -> tuple[Optional[str], Optional[str]]:
+    def _parse_theme(
+        value: str,
+    ) -> tuple[Optional[str], Optional[str]]:
         """Parse and validate a renderer theme name."""
         normalized = value.capitalize()
-        if normalized in ["Hedge", "Pacman", "Basic", "Silicon"]:
+
+        if normalized in [
+            "Hedge",
+            "Pacman",
+            "Basic",
+            "Silicon",
+        ]:
             return normalized, None
+
         return None, f"Invalid theme value: {value}"
 
     @classmethod
     def load_config(
-        cls, file_path: str
+        cls,
+        file_path: str,
     ) -> tuple[Optional[MazeConfig], Optional[str]]:
         """Load a configuration file into a validated configuration object."""
         lines, error = cls._load_lines(file_path)
+
         if error or lines is None:
             return None, error
+
         raw, error = cls._split_lines(lines)
+
         if error or raw is None:
             return None, error
-        width, width_error = cls._parse_positive_integer(raw["WIDTH"])
-        height, height_error = cls._parse_positive_integer(raw["HEIGHT"])
-        entry, entry_error = cls._parse_point(raw["ENTRY"])
-        exit_point, exit_error = cls._parse_point(raw["EXIT"])
-        perfect, perfect_error = cls._parse_bool(raw["PERFECT"])
+
+        width, width_error = cls._parse_positive_integer(
+            raw["WIDTH"]
+        )
+
+        height, height_error = cls._parse_positive_integer(
+            raw["HEIGHT"]
+        )
+
+        entry, entry_error = cls._parse_point(
+            raw["ENTRY"]
+        )
+
+        exit_point, exit_error = cls._parse_point(
+            raw["EXIT"]
+        )
+
+        perfect, perfect_error = cls._parse_bool(
+            raw["PERFECT"]
+        )
+
         errors = [
-            item for item in (
-                width_error, height_error, entry_error, exit_error,
-                perfect_error
-            ) if item
+            item
+            for item in (
+                width_error,
+                height_error,
+                entry_error,
+                exit_error,
+                perfect_error,
+            )
+            if item
         ]
-        parsed_width = cast(int, width)
-        parsed_height = cast(int, height)
-        parsed_entry = cast(tuple[int, int], entry)
-        parsed_exit = cast(tuple[int, int], exit_point)
-        parsed_perfect = cast(bool, perfect)
+
         output_file = raw["OUTPUT_FILE"].strip()
+
         if not output_file:
-            errors.append("OUTPUT_FILE: Value cannot be empty")
-        algorithm = raw.get("ALGORITHM", "dfs").lower()
-        if algorithm not in ("dfs", "walk", "couple"):
-            errors.append("ALGORITHM must be dfs or walk or couple")
+            errors.append(
+                "OUTPUT_FILE: Value cannot be empty"
+            )
+
+        algorithm = raw.get(
+            "ALGORITHM",
+            "dfs",
+        ).lower()
+
+        if algorithm not in (
+            "dfs",
+            "walk",
+            "couple",
+        ):
+            errors.append(
+                "ALGORITHM must be dfs or walk or couple"
+            )
+
         seed: Optional[int] = None
+
         if "SEED" in raw:
             try:
                 seed = int(raw["SEED"])
             except ValueError:
-                errors.append(f"SEED: Invalid integer value: {raw['SEED']}")
-        animate: Optional[bool] = None
-        if "ANIMATE" in raw:
-            try:
-                animate, animate_error = cls._parse_bool(raw["ANIMATE"])
-            except ValueError:
-                errors.append(f"ANIMATE: Invalid value: {raw['ANIMATE']}")
-        show_path: Optional[bool] = None
-        if "SHOW_PATH" in raw:
-            try:
-                show_path, show_path_error = cls._parse_bool(raw["SHOW_PATH"])
-            except ValueError:
-                errors.append(f"SHOW_PATH: Invalid value: {raw['SHOW_PATH']}")
-        theme: Optional[str] = None
-        if "THEME" in raw:
-            try:
-                theme = str(raw["THEME"]).capitalize()
-            except ValueError:
-                errors.append(f"THEME: Invalid value: {raw['THEME']}")
-
-        for name, point in (
-            ("ENTRY", parsed_entry),
-            ("EXIT", parsed_exit),
-        ):
-            if point[0] >= parsed_width or point[1] >= parsed_height:
                 errors.append(
-                    f"{name} {point} is outside maze boundaries "
-                    + f"({parsed_width}x{parsed_height})"
+                    f"SEED: Invalid integer value: "
+                    f"{raw['SEED']}"
                 )
-        if parsed_entry == parsed_exit:
-            errors.append(
-                f"ENTRY {parsed_entry} cannot be the same as "
-                f"EXIT {parsed_exit}"
+
+        show_path: Optional[bool] = None
+
+        if "SHOW_PATH" in raw:
+            show_path, show_path_error = cls._parse_bool(
+                raw["SHOW_PATH"]
             )
+
+            if show_path_error:
+                errors.append(show_path_error)
+
+        theme: Optional[str] = None
+
+        if "THEME" in raw:
+            theme, theme_error = cls._parse_theme(
+                raw["THEME"]
+            )
+
+            if theme_error:
+                errors.append(theme_error)
+
         if errors:
             return None, "\n".join(errors)
+
+        width = cast(int, width)
+        height = cast(int, height)
+        entry = cast(tuple[int, int], entry)
+        exit_point = cast(tuple[int, int], exit_point)
+        perfect = cast(bool, perfect)
+
+        for name, point in (
+            ("ENTRY", entry),
+            ("EXIT", exit_point),
+        ):
+            if point[0] >= width or point[1] >= height:
+                errors.append(
+                    f"{name} {point} is outside maze boundaries "
+                    f"({width}x{height})"
+                )
+
+        if entry == exit_point:
+            errors.append(
+                f"ENTRY {entry} cannot be the same as "
+                f"EXIT {exit_point}"
+            )
+
+        if errors:
+            return None, "\n".join(errors)
+
         return MazeConfig(
-            parsed_width, parsed_height, parsed_entry, parsed_exit,
-            output_file, parsed_perfect,
-            algorithm, seed, animate, show_path, theme
+            width,
+            height,
+            entry,
+            exit_point,
+            output_file,
+            perfect,
+            algorithm,
+            seed,
+            show_path,
+            theme,
         ), None

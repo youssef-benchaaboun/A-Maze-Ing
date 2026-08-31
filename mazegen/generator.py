@@ -1,4 +1,5 @@
 import random
+import sys
 from typing import Optional
 
 
@@ -102,6 +103,12 @@ class MazeGenerator:
         ]
 
         for row, column in pattern:
+            if (x + column, y + row) in [self.entry, self.exit_point]:
+                print(
+                    "Cannot create maze: ENTRY and EXIT in 42 pattern",
+                    file=sys.stderr
+                )
+                sys.exit(1)
             self.grid[y + row][x + column].visited = True
 
     def _generate_dfs(self, current: tuple[int, int] = (0, 0)) -> None:
@@ -252,6 +259,8 @@ class MazeGenerator:
         elif self.algorithm == "couple":
             self._generate_couple()
         else:
+            cell_count = self.width * self.height
+            sys.setrecursionlimit(max(sys.getrecursionlimit(), cell_count + 100))
             self._generate_dfs()
 
         if not self.perfect:
@@ -317,6 +326,9 @@ class MazeGenerator:
         """Save the encoded maze and solution, returning any write error."""
         path = self.get_solution()
 
+        if self.entry==self.exit_point:
+            return "Cannot save maze: same ENTRY and EXIT"
+        
         if path is None:
             return "Cannot save maze: no path exists between ENTRY and EXIT"
 

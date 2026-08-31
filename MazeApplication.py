@@ -191,11 +191,6 @@ class MazeApplication:
                             MazeRenderer(self.config, self.generator)
                             self.render_menu(menu_sel, menu)
 
-                        case "Animate":
-                            self.config.set_animate(
-                                not self.config.get_animate()
-                            )
-
                         case "Style":
                             menu = self.menu_options[1]
                             menu_sel = 0
