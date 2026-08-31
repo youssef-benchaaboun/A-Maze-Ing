@@ -1,10 +1,11 @@
 1. Entry=exit -> fixed
 1b. Keys after esc
-2. Entry/exit on 42
+2. Entry/exit on 42 -> fixed
 3. Show_path validation
-3. Theme validation -> fixed
+4. Theme validation -> fixed
 5. Entry/exit validation
 6. Recursive dfs in big map
+7. Negative width/height -> fixed
 
 hi bro those are bugs i could find until now they are big and can be a reason we faild and lose 3 eval points 
 

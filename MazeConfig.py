@@ -246,7 +246,11 @@ class ConfigLoader:
             ("ENTRY", parsed_entry),
             ("EXIT", parsed_exit),
         ):
-            if point[0] >= parsed_width or point[1] >= parsed_height:
+            if (
+                isinstance(parsed_width, int)
+                and isinstance(parsed_height, int)
+                and (point[0] >= parsed_width or point[1] >= parsed_height)
+            ):
                 errors.append(
                     f"{name} {point} is outside maze boundaries "
                     + f"({parsed_width}x{parsed_height})"
