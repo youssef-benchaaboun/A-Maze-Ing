@@ -40,7 +40,7 @@ class MazeApplication:
             self.config.get_seed(),
             self.config.get_algorithm(),
             self.config.get_perfect(),
-            self._get_animate_callback(),
+            self.get_animate_funct(),
         )
 
     @staticmethod
@@ -64,7 +64,7 @@ class MazeApplication:
 
         return ch
 
-    def _get_animate_callback(self) -> Optional[Callable[[MazeGenerator], None]]:
+    def get_animate_funct(self) -> Optional[Callable[[MazeGenerator], None]]:
         return self.render_maze if self.config.get_animate() else None
 
     def render_maze(self, maze: MazeGenerator) -> None:
@@ -121,7 +121,7 @@ class MazeApplication:
         print("             ", end="")
         print("\n" + colors["0"])
 
-    def print_control(self, maze_height: int) -> None:
+    def print_control(self) -> None:
         """Display the maze and process interactive menu controls."""
         menu_sel = 0
         menu = self.menu_options[0]
@@ -180,7 +180,7 @@ class MazeApplication:
                         case "Replay":
                             lines_up = (
                                 "\x1b["
-                                + str(maze_height * 2 + 5)
+                                + str(self.config.get_height() * 2 + 5)
                                 + "A"
                             )
                             print(lines_up, end="")
@@ -276,7 +276,7 @@ class MazeApplication:
     def run(self) -> int:
         """Generate, display, and save a maze, returning a status code."""
         self.generator.generate()
-        self.print_control(self.config.get_height())
+        self.print_control()
 
         error = self.generator.save_output(
             self.config.get_output_file()
