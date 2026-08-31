@@ -6,5 +6,5 @@ EXIT=9,3
 OUTPUT_FILE=maze.txt
 PERFECT=True
 ALGORITHM=dfs
-SHOW_PATH=True
-THEME=Pacman
+SHOW_PATH=False
+THEME=Hedge

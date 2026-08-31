@@ -1,9 +1,5 @@
 from abc import ABC, abstractmethod
 
-from MazeConfig import MazeConfig
-from mazegen import MazeGenerator
-
-
 Coordinate = tuple[int, int]
 RendererData = tuple[
     list[list[int]],
@@ -18,8 +14,8 @@ class MazeRenderer:
 
     def __init__(
         self,
-        config: MazeConfig,
-        generator: MazeGenerator,
+        config: "MazeConfig",
+        generator: "MazeGenerator",
     ) -> None:
         """Initialize the renderer and immediately print the maze."""
         self.config = config

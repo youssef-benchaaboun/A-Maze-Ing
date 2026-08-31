@@ -40,6 +40,7 @@ class MazeApplication:
             self.config.get_seed(),
             self.config.get_algorithm(),
             self.config.get_perfect(),
+            self.config
         )
 
     @staticmethod
