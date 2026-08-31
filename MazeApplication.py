@@ -131,7 +131,7 @@ class MazeApplication:
             elif key in ["a", "w", "s", "d"]:
                 entry = self.config.get_entry()
                 current = self.generator.grid[entry[1]][entry[0]]
-                
+
                 if key == "w" and current.north == 0:
                     entry = (entry[0], entry[1] - 1)
                 elif key == "s" and current.south == 0:
@@ -142,8 +142,7 @@ class MazeApplication:
                     entry = (entry[0] - 1, entry[1])
 
                 self.config.set_entry(entry)
-                self.generator.entry=entry
-
+                self.generator.entry = entry
 
                 MazeRenderer(self.config, self.generator)
                 self.render_menu(menu_sel, menu)

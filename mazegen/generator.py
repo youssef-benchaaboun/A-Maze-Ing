@@ -144,7 +144,7 @@ class MazeGenerator:
                 self.grid[y][x].visited = True
                 self._open_passage(p1, p2)
 
-                list_copy:list[tuple]=[]
+                list_copy: list[tuple] = []
                 for neighbor in self._get_neighbors(p2):
                     xn, yn = neighbor
                     if not self.grid[yn][xn].visited:
@@ -260,7 +260,9 @@ class MazeGenerator:
             self._generate_couple()
         else:
             cell_count = self.width * self.height
-            sys.setrecursionlimit(max(sys.getrecursionlimit(), cell_count + 100))
+            sys.setrecursionlimit(
+                max(sys.getrecursionlimit(), cell_count + 100)
+            )
             self._generate_dfs()
 
         if not self.perfect:
@@ -326,9 +328,9 @@ class MazeGenerator:
         """Save the encoded maze and solution, returning any write error."""
         path = self.get_solution()
 
-        if self.entry==self.exit_point:
+        if self.entry == self.exit_point:
             return "Cannot save maze: same ENTRY and EXIT"
-        
+
         if path is None:
             return "Cannot save maze: no path exists between ENTRY and EXIT"
 
