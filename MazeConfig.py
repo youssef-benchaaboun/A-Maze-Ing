@@ -14,6 +14,7 @@ class MazeConfig:
         perfect: bool,
         algorithm: str,
         seed: Optional[int],
+        animate: Optional[bool],
         show_path: Optional[bool],
         theme: Optional[str],
     ) -> None:
@@ -26,6 +27,7 @@ class MazeConfig:
         self._perfect = perfect
         self._algorithm = algorithm
         self._seed = seed
+        self._animate = animate
         self._show_path = show_path
         self._theme = theme
         self._color42 = ""
@@ -78,6 +80,14 @@ class MazeConfig:
         """Set the random seed."""
         self._seed = value
 
+    def get_animate(self) -> Optional[bool]:
+        """Return the optional animation setting."""
+        return self._animate
+
+    def set_animate(self, value: bool) -> None:
+        """Enable or disable animation."""
+        self._animate = value
+
     def get_show_path(self) -> Optional[bool]:
         """Return the optional path-visibility setting."""
         return self._show_path
@@ -109,7 +119,7 @@ class ConfigLoader:
     REQUIRED_KEYS = (
         "WIDTH", "HEIGHT", "ENTRY", "EXIT", "OUTPUT_FILE", "PERFECT"
     )
-    OPTIONAL_KEYS = ("ALGORITHM", "SEED", "SHOW_PATH", "THEME")
+    OPTIONAL_KEYS = ("ALGORITHM", "SEED", "ANIMATE", "SHOW_PATH", "THEME")
     VALID_KEYS = REQUIRED_KEYS + OPTIONAL_KEYS
 
     @staticmethod
@@ -186,6 +196,14 @@ class ConfigLoader:
             return False, None
         return None, f"Invalid boolean value: {value}"
 
+    @staticmethod
+    def _parse_theme(value: str) -> tuple[Optional[str], Optional[str]]:
+        """Parse and validate a renderer theme name."""
+        normalized = value.capitalize()
+        if normalized in ["Hedge", "Pacman", "Basic", "Silicon"]:
+            return normalized, None
+        return None, f"Invalid theme value: {value}"
+
     @classmethod
     def load_config(
         cls, file_path: str
@@ -225,6 +243,12 @@ class ConfigLoader:
                 seed = int(raw["SEED"])
             except ValueError:
                 errors.append(f"SEED: Invalid integer value: {raw['SEED']}")
+        animate: Optional[bool] = None
+        if "ANIMATE" in raw:
+            try:
+                animate, animate_error = cls._parse_bool(raw["ANIMATE"])
+            except ValueError:
+                errors.append(f"ANIMATE: Invalid value: {raw['ANIMATE']}")
         show_path: Optional[bool] = None
         if "SHOW_PATH" in raw:
             try:
@@ -234,11 +258,7 @@ class ConfigLoader:
         theme: Optional[str] = None
         if "THEME" in raw:
             try:
-                normalized = str(raw["THEME"]).capitalize()
-                if normalized in ["Hedge", "Pacman", "Basic", "Silicon"]:
-                    theme = normalized
-                else:
-                    raise ValueError
+                theme = str(raw["THEME"]).capitalize()
             except ValueError:
                 errors.append(f"THEME: Invalid value: {raw['THEME']}")
 
@@ -261,5 +281,5 @@ class ConfigLoader:
         return MazeConfig(
             parsed_width, parsed_height, parsed_entry, parsed_exit,
             output_file, parsed_perfect,
-            algorithm, seed, show_path, theme
+            algorithm, seed, animate, show_path, theme
         ), None

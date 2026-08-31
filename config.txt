@@ -6,5 +6,6 @@ EXIT=9,3
 OUTPUT_FILE=maze.txt
 PERFECT=True
 ALGORITHM=walk
+ANIMATE=False
 SHOW_PATH=True
 THEME=Pacman

@@ -1,11 +1,3 @@
-1. Entry=exit -> fixed
-1b. Keys after esc
-2. Entry/exit on 42
-3. Show_path validation
-3. Theme validation -> fixed
-5. Entry/exit validation
-6. Recursive dfs in big map
-
 hi bro those are bugs i could find until now they are big and can be a reason we faild and lose 3 eval points 
 
 1- entry=exit after playing with "wsad" enty keep changing and we entry = exit and we exit it save that which is refuesd by subject tottaly so if they run the verfier it will be wrong
@@ -24,4 +16,3 @@ its easy to fix just verfier erro from pars_bool if not None then append it
 
 5- for entry exit again our code will crush cause we removed the check i put first time after parrseing each attrubit we dont check and return errors directly so if entry is bad we continy and then we check point[0] which is litteraly None[0] 
 solution we just put first version i did check errors after parsing then returning them if any fail in parsing before move next step
-
