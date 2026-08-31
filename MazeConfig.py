@@ -14,6 +14,7 @@ class MazeConfig:
         perfect: bool,
         algorithm: str,
         seed: Optional[int],
+        animate: Optional[bool],
         show_path: Optional[bool],
         theme: Optional[str],
     ) -> None:
@@ -26,6 +27,7 @@ class MazeConfig:
         self._perfect = perfect
         self._algorithm = algorithm
         self._seed = seed
+        self._animate = animate
         self._show_path = show_path
         self._theme = theme
         self._color42 = ""
@@ -78,6 +80,14 @@ class MazeConfig:
         """Set the random seed."""
         self._seed = value
 
+    def get_animate(self) -> Optional[bool]:
+        """Return the optional animation setting."""
+        return self._animate
+
+    def set_animate(self, value: bool) -> None:
+        """Enable or disable animation."""
+        self._animate = value
+
     def get_show_path(self) -> Optional[bool]:
         """Return the optional path-visibility setting."""
         return self._show_path
@@ -118,6 +128,7 @@ class ConfigLoader:
     OPTIONAL_KEYS = (
         "ALGORITHM",
         "SEED",
+        "ANIMATE",
         "SHOW_PATH",
         "THEME",
     )
@@ -326,6 +337,17 @@ class ConfigLoader:
                     f"{raw['SEED']}"
                 )
 
+        animate: Optional[bool] = None
+
+        if "ANIMATE" in raw:
+            try:
+                animate, animate_error = cls._parse_bool(
+                    raw["ANIMATE"]
+                )
+
+            except ValueError:
+                errors.append(f"ANIMATE: Invalid value: {raw['ANIMATE']}")
+
         show_path: Optional[bool] = None
 
         if "SHOW_PATH" in raw:
@@ -383,6 +405,7 @@ class ConfigLoader:
             perfect,
             algorithm,
             seed,
+            animate,
             show_path,
             theme,
         ), None

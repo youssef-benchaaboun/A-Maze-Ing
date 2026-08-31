@@ -1,10 +1,11 @@
 # Default A-Maze-ing configuration
-WIDTH=10
-HEIGHT=10
-ENTRY=6,3
-EXIT=9,3
+WIDTH=13
+HEIGHT=9
+ENTRY=0,0
+EXIT=12,8
 OUTPUT_FILE=maze.txt
 PERFECT=True
 ALGORITHM=dfs
-SHOW_PATH=True
-THEME=Pacman
+SHOW_PATH=False
+THEME=Hedge
+ANIMATE=False

@@ -2,7 +2,7 @@ import random
 import sys
 import termios
 import tty
-
+from typing import Callable, Optional
 from MazeConfig import MazeConfig
 from mazegen import MazeGenerator
 from MazeRenderer import MazeRenderer
@@ -18,7 +18,7 @@ class MazeApplication:
         self.menu_options = [
             ["Replay", "Style", "Options", "Exit"],
             ["Theme", "Color42", "Back"],
-            ["Path", "Algorithm", "Back"],
+            ["Path", "Algorithm", "Animate", "Back"],
             ["Hedge", "Pacman", "Basic", "Silicon"],
             [
                 "255;255;255", "255;0;0", "255;128;0",
@@ -40,6 +40,7 @@ class MazeApplication:
             self.config.get_seed(),
             self.config.get_algorithm(),
             self.config.get_perfect(),
+            self._get_animate_callback(),
         )
 
     @staticmethod
@@ -63,6 +64,12 @@ class MazeApplication:
 
         return ch
 
+    def _get_animate_callback(self) -> Optional[Callable[[MazeGenerator], None]]:
+        return self.render_maze if self.config.get_animate() else None
+
+    def render_maze(self, maze: MazeGenerator) -> None:
+        MazeRenderer(self.config, maze)
+
     def render_menu(
         self,
         selected: int,
@@ -73,6 +80,7 @@ class MazeApplication:
 
         path_box = "✔" if self.config.get_show_path() else " "
         perfect_box = "✔" if self.config.get_perfect() else " "
+        animate_box = "✔" if self.config.get_animate() else " "
 
         colors = {
             "oc": "\x1b[48;2;0;0;90m",
@@ -86,6 +94,8 @@ class MazeApplication:
                 option = f"{path_box}{option}"
             elif option == "Perfect":
                 option = f"{perfect_box}{option}"
+            elif option == "Animate":
+                option = f"{animate_box}{option}"
 
             if menu[0] == "255;255;255" and option != "Back":
                 color = "\x1b[48;2;" + option + "m"
@@ -116,7 +126,7 @@ class MazeApplication:
         menu_sel = 0
         menu = self.menu_options[0]
 
-        MazeRenderer(self.config, self.generator)
+        self.render_maze(self.generator)
         self.render_menu(menu_sel, menu)
 
         while True:
@@ -147,7 +157,7 @@ class MazeApplication:
                 self.config.set_entry(entry)
                 self.generator.entry = entry
 
-                MazeRenderer(self.config, self.generator)
+                self.render_maze(self.generator)
                 self.render_menu(menu_sel, menu)
 
             elif key in ("\n", "\r"):
@@ -160,7 +170,7 @@ class MazeApplication:
                     else:
                         self.config.set_color42(menu[menu_sel])
 
-                    MazeRenderer(self.config, self.generator)
+                    self.render_maze(self.generator)
                     self.render_menu(menu_sel, menu)
 
                 else:
@@ -182,7 +192,7 @@ class MazeApplication:
                             self.generator = self._create_generator()
                             self.generator.generate()
 
-                            MazeRenderer(self.config, self.generator)
+                            self.render_maze(self.generator)
                             self.render_menu(menu_sel, menu)
 
                         case "Path":
@@ -190,7 +200,7 @@ class MazeApplication:
                                 not self.config.get_show_path()
                             )
 
-                            MazeRenderer(self.config, self.generator)
+                            self.render_maze(self.generator)
                             self.render_menu(menu_sel, menu)
 
                         case "Style":
@@ -210,7 +220,7 @@ class MazeApplication:
                             menu = self.menu_options[1]
                             menu_sel = 0
 
-                            MazeRenderer(self.config, self.generator)
+                            self.render_maze(self.generator)
                             self.render_menu(menu_sel, menu)
 
                         case "Color42":
@@ -229,7 +239,7 @@ class MazeApplication:
                             self.generator = self._create_generator()
                             self.generator.generate()
 
-                            MazeRenderer(self.config, self.generator)
+                            self.render_maze(self.generator)
                             self.render_menu(menu_sel, menu)
 
                         case "Walk" | "DFS" | "Couple":
@@ -238,8 +248,16 @@ class MazeApplication:
                             self.generator = self._create_generator()
                             self.generator.generate()
 
-                            MazeRenderer(self.config, self.generator)
+                            self.render_maze(self.generator)
                             self.render_menu(menu_sel, menu)
+
+                        case "Animate":
+                            self.config.set_animate(
+                                not self.config.get_animate()
+                            )
+                            if self.config.get_animate():
+                                menu = self.menu_options[0]
+                                menu_sel = 0
 
                         case "Back":
                             menu = self.menu_options[0]

@@ -1,6 +1,7 @@
 import random
 import sys
-from typing import Optional
+import time
+from typing import Callable, Optional
 
 
 class MazeCell:
@@ -35,6 +36,7 @@ class MazeGenerator:
         seed: Optional[int] = None,
         algorithm: str = "dfs",
         perfect: bool = True,
+        on_passage_opened: Optional[Callable[["MazeGenerator"], None]] = None,
     ) -> None:
         """Initialize a reusable maze generator."""
         self.width: int = width
@@ -43,6 +45,7 @@ class MazeGenerator:
         self.exit_point: tuple[int, int] = exit_point
         self.algorithm: str = algorithm
         self.perfect: bool = perfect
+        self.on_passage_opened = on_passage_opened
         self.random: random.Random = random.Random(seed)
         self.grid: list[list[MazeCell]] = []
         self._initialize_grid()
@@ -93,6 +96,9 @@ class MazeGenerator:
         elif y1 - 1 == y2:
             self.grid[y1][x1].north = 0
             self.grid[y2][x2].south = 0
+        if self.on_passage_opened:
+            self.on_passage_opened(self)
+            time.sleep(0.04)
 
     def _place_42_pattern(self, x: int, y: int) -> None:
         """Reserve fully closed cells forming the centered 42 pattern."""
