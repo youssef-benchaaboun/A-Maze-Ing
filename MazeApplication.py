@@ -128,6 +128,9 @@ class MazeApplication:
             elif key == "\x1b[C":
                 menu_sel = (menu_sel + 1) % len(menu)
 
+            elif key == "\x1b\x1b\x1b":
+                return
+
             elif key in ["a", "w", "s", "d"]:
                 entry = self.config.get_entry()
                 current = self.generator.grid[entry[1]][entry[0]]
