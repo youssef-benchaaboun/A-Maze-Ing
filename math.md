@@ -483,9 +483,11 @@ $$
 $$
 
 ---
-# Proof: `_open_dead_ends()` Cannot Create an Open 3×3 Area
+# Proof: `_open_dead_ends()` Cannot Create a Fully Open 3×3 Block
 
-Assume, for contradiction, that `_open_dead_ends()` creates a completely open \(3 \times 3\) block:
+## Goal
+
+We want to prove that opening dead ends cannot create a completely open \(3 \times 3\) area such as:
 
 $$
 \begin{matrix}
@@ -495,83 +497,553 @@ C_7 & C_8 & C_9
 \end{matrix}
 $$
 
-A completely open \(3 \times 3\) block requires the center cell \(C_5\) to be connected in all four directions:
+A **fully open \(3 \times 3\) block** means that every passage between adjacent cells inside this block is open.
+
+---
+
+## 1. Wall Count of a Cell
+
+Every maze cell has four possible walls:
 
 $$
-C_5 \leftrightarrow C_2,\quad
-C_5 \leftrightarrow C_4,\quad
-C_5 \leftrightarrow C_6,\quad
-C_5 \leftrightarrow C_8
+N,\ E,\ S,\ W
+$$
+
+Let:
+
+$$
+w(C)
+$$
+
+denote the number of closed walls of a cell \(C\).
+
+Therefore:
+
+$$
+0 \leq w(C) \leq 4
+$$
+
+A dead end has exactly one open passage.
+
+So:
+
+$$
+w(C)=3
+$$
+
+because three walls remain closed.
+
+Therefore `_open_dead_ends()` only selects cells satisfying:
+
+$$
+\boxed{w(C)=3}
+$$
+
+---
+
+## 2. Effect of `_open_dead_ends()`
+
+For every selected dead end, the function removes exactly one additional wall.
+
+Therefore:
+
+$$
+w_{\text{after}}(C)
+=
+w_{\text{before}}(C)-1
+$$
+
+Since a selected cell starts with:
+
+$$
+w_{\text{before}}(C)=3
+$$
+
+we obtain:
+
+$$
+w_{\text{after}}(C)=3-1=2
+$$
+
+Thus:
+
+$$
+\boxed{w_{\text{after}}(C)=2}
+$$
+
+for every dead end modified by the function.
+
+So a cell modified exactly once by `_open_dead_ends()` can never become:
+
+$$
+w(C)=1
+$$
+
+or:
+
+$$
+w(C)=0
+$$
+
+It can only change from:
+
+$$
+3 \longrightarrow 2
+$$
+
+---
+
+# 3. Requirements of a Fully Open 3×3 Block
+
+Consider:
+
+$$
+\begin{matrix}
+C_1 & C_2 & C_3 \\
+C_4 & C_5 & C_6 \\
+C_7 & C_8 & C_9
+\end{matrix}
+$$
+
+The cells do not all require the same number of open passages.
+
+There are three types of cells:
+
+* center,
+* edge centers,
+* corners.
+
+---
+
+## Center Cell \(C_5\)
+
+The center must connect to:
+
+$$
+C_2,\ C_4,\ C_6,\ C_8
+$$
+
+Therefore all four of its walls must be open.
+
+Its degree inside the block is:
+
+$$
+\deg(C_5)=4
+$$
+
+and therefore:
+
+$$
+w(C_5)=4-\deg(C_5)=0
+$$
+
+Hence:
+
+$$
+\boxed{w(C_5)=0}
+$$
+
+---
+
+## Edge Cells
+
+Consider \(C_2\).
+
+Inside the \(3\times3\) block it must connect to:
+
+$$
+C_1,\ C_3,\ C_5
+$$
+
+So it must have at least three open passages.
+
+Therefore:
+
+$$
+\deg(C_2)\geq3
+$$
+
+and:
+
+$$
+w(C_2)\leq1
+$$
+
+The same applies to:
+
+$$
+C_4,\ C_6,\ C_8
+$$
+
+Thus:
+
+$$
+\boxed{
+w(C_2),w(C_4),w(C_6),w(C_8)\leq1
+}
+$$
+
+---
+
+## Corner Cells
+
+For example, \(C_1\) must connect to:
+
+$$
+C_2
+$$
+
+and:
+
+$$
+C_4
+$$
+
+Therefore it needs at least two open passages.
+
+So:
+
+$$
+\deg(C_1)\geq2
+$$
+
+and:
+
+$$
+w(C_1)\leq2
+$$
+
+Likewise:
+
+$$
+\boxed{
+w(C_1),w(C_3),w(C_7),w(C_9)\leq2
+}
+$$
+
+---
+
+# 4. Required Wall Pattern
+
+Therefore a fully open \(3\times3\) block requires:
+
+$$
+\begin{matrix}
+\leq2 & \leq1 & \leq2\\
+\leq1 & 0 & \leq1\\
+\leq2 & \leq1 & \leq2
+\end{matrix}
+$$
+
+In particular, five cells require fewer than two walls:
+
+$$
+C_2,\ C_4,\ C_5,\ C_6,\ C_8
+$$
+
+with:
+
+$$
+w(C_5)=0
+$$
+
+and:
+
+$$
+w(C_2),w(C_4),w(C_6),w(C_8)\leq1
+$$
+
+---
+
+# 5. Contradiction
+
+Now consider any cell modified by `_open_dead_ends()`.
+
+Before modification:
+
+$$
+w_{\text{before}}=3
+$$
+
+After removing one wall:
+
+$$
+w_{\text{after}}=2
 $$
 
 Therefore:
 
 $$
-\text{walls}(C_5)=0
+\boxed{w_{\text{after}}\geq2}
 $$
 
-However, `_open_dead_ends()` only modifies dead-end cells:
+But a fully open \(3\times3\) block requires the center to satisfy:
 
 $$
-\text{walls}_{before}=3
+w(C_5)=0
 $$
 
-and removes at most one wall from each such cell:
+and the four edge-center cells to satisfy:
 
 $$
-\text{walls}_{after}
-=
-\text{walls}_{before}-1
-=
-3-1
-=
-2
+w(C_i)\leq1
 $$
 
-Thus every cell modified by `_open_dead_ends()` satisfies:
+Thus a dead-end transformation:
 
 $$
-\boxed{\text{walls}_{after}=2}
+3\rightarrow2
 $$
 
-It therefore cannot transform a dead end into a cell having:
+cannot directly produce any of these required states:
 
 $$
-0 \text{ or } 1 \text{ walls}
+3\rightarrow1
 $$
 
-But a completely open \(3 \times 3\) area requires:
+or:
 
 $$
-\text{walls}(C_5)=0
+3\rightarrow0
 $$
 
-and its four edge-center cells require at most:
+because only one wall is removed.
+
+Formally:
 
 $$
-\text{walls}(C_2),
-\text{walls}(C_4),
-\text{walls}(C_6),
-\text{walls}(C_8)
-\leq 1
+3-1=2
 $$
 
-Hence the required state cannot be produced by opening a single wall of a dead end:
+while the required states satisfy:
 
 $$
-3-1=2 > 1
+w\leq1
 $$
 
 Therefore:
+
+$$
+2>1
+$$
+
+which is a contradiction.
+
+---
+
+# 6. Graph-Theory Interpretation
+
+We can also express this using vertex degree.
+
+For a cell:
+
+$$
+\deg(C)=4-w(C)
+$$
+
+A dead end initially has:
+
+$$
+w(C)=3
+$$
+
+so:
+
+$$
+\deg(C)=1
+$$
+
+After opening one wall:
+
+$$
+w(C)=2
+$$
+
+therefore:
+
+$$
+\deg(C)=2
+$$
+
+Thus `_open_dead_ends()` performs only the transformation:
+
+$$
+\boxed{\deg(C):1\rightarrow2}
+$$
+
+But a fully open \(3\times3\) block requires:
+
+### Center
+
+$$
+\deg(C_5)=4
+$$
+
+### Edge centers
+
+$$
+\deg(C_2),
+\deg(C_4),
+\deg(C_6),
+\deg(C_8)
+\geq3
+$$
+
+The function cannot transform:
+
+$$
+1\rightarrow3
+$$
+
+or:
+
+$$
+1\rightarrow4
+$$
+
+because it adds only one new passage.
+
+It can only produce:
+
+$$
+1\rightarrow2
+$$
+
+---
+
+# 7. Why the Perfect Maze Matters
+
+Before `_open_dead_ends()` runs, the maze is generated as a spanning tree.
+
+Therefore the initial graph:
+
+$$
+G=(V,E)
+$$
+
+satisfies:
+
+$$
+|E|=|V|-1
+$$
+
+and contains no cycles.
+
+Opening a dead end adds one extra edge.
+
+This can create a cycle, which is expected when transforming a perfect maze into a non-perfect maze.
+
+However, each selected dead end receives only one additional edge.
+
+So locally:
+
+$$
+\deg:1\rightarrow2
+$$
+
+The operation may therefore create loops, but it does not turn a dead end directly into a highly connected room-like cell of degree \(3\) or \(4\).
+
+This is the important distinction:
+
+> `_open_dead_ends()` may introduce cycles, but each modified dead end gains only one additional connection.
+
+---
+
+# 8. Important Assumption
+
+This proof depends on the following implementation rule:
+
+> Each selected dead-end cell is modified at most once during `_open_dead_ends()`.
+
+If a cell were allowed to be processed repeatedly, then it could theoretically change as follows:
+
+$$
+3\rightarrow2\rightarrow1\rightarrow0
+$$
+
+and the proof would no longer hold.
+
+Therefore the implementation must ensure that the function does not repeatedly reopen the same cell after its state changes.
+
+Under this condition:
+
+$$
+\boxed{
+3\rightarrow2
+}
+$$
+
+is the maximum modification of any selected dead end.
+
+---
+
+# Conclusion
+
+A dead end begins with:
+
+$$
+w=3
+$$
+
+and `_open_dead_ends()` removes at most one wall:
+
+$$
+3-1=2
+$$
+
+Therefore every modified dead end finishes with:
+
+$$
+\boxed{w=2}
+$$
+
+or equivalently:
+
+$$
+\boxed{\deg=2}
+$$
+
+A fully open \(3\times3\) block requires:
+
+$$
+w(C_5)=0
+$$
+
+and:
+
+$$
+w(C_2),w(C_4),w(C_6),w(C_8)\leq1
+$$
+
+equivalently:
+
+$$
+\deg(C_5)=4
+$$
+
+and:
+
+$$
+\deg(C_2),\deg(C_4),\deg(C_6),\deg(C_8)\geq3
+$$
+
+But `_open_dead_ends()` can only perform:
+
+$$
+\deg:1\rightarrow2
+$$
+
+Therefore, assuming each dead end is processed at most once:
 
 $$
 \boxed{
 \_open\_dead\_ends()
-\text{ cannot by itself transform a dead-end cell into the}
-\ 0\text{- or }1\text{-wall cells required by an open }3\times3\text{ block}
+\text{ cannot by itself turn a processed dead end into the highly connected}
+\ 3\text{- or }4\text{-degree cells required by a fully open }3\times3\text{ area.}
 }
 $$
 
 $$
 \blacksquare
 $$
+
