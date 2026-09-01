@@ -273,9 +273,12 @@ class MazeApplication:
     def run(self) -> int:
         """Generate, display, and save a maze, returning a status code."""
         self.generator.generate()
+        copy_gen=self._create_generator()
+        copy_gen.grid=self.generator.get_grid()
+
         self.print_control()
 
-        error = self.generator.save_output(
+        error = copy_gen.save_output(
             self.config.get_output_file()
         )
 
