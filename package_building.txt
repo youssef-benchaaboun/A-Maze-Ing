@@ -1,0 +1,43 @@
+# Step 1: Re-build the package
+pip install --upgrade build
+python3 -m build
+
+# Step 2: Create an isolated environment and copy the package
+python3 -m venv test_env
+mkdir -p test_env/packages
+cp dist/mazegen-*.whl test_env/packages/
+
+# Step 3: Activate the isolated environment and install the package
+source test_env/bin/activate
+pip install test_env/packages/mazegen-*.whl
+
+# Step 4: Test it using a simple main 
+# test_main.py
+import sys
+from mazegen import MazeGenerator
+
+def main():
+    print("🚀 Initializing MazeGenerator from installed package...")
+    
+    # Initialize a 10x10 maze using your class signatures
+    try:
+        maze = MazeGenerator(
+            width=10,
+            height=10,
+            entry=(0, 0),
+            exit_point=(9, 9),
+            seed=42,
+            algorithm="dfs"
+        )
+        maze.generate()
+        maze.save_output()
+        print("✅ Maze structure generated successfully inside the isolated env!")
+        sys.exit(0)
+    except Exception as e:
+        print(f"❌ Failed to test maze generator: {e}")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
+
+deactivate
